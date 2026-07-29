@@ -406,10 +406,10 @@
     return apply;
   }
 
-  const applyNoTinToggle = wireDefaultToggle(noTinEl, tinEl, "tin", "N/A");
-  const applyNoSssToggle = wireDefaultToggle(noSssEl, sssEl, "sss", "N/A");
-  const applyNoPhilHealthToggle = wireDefaultToggle(noPhilHealthEl, philHealthEl, "philHealth", "N/A");
-  const applyNoPagIbigToggle = wireDefaultToggle(noPagIbigEl, pagIbigEl, "pagIbig", "N/A");
+  const applyNoTinToggle = wireDefaultToggle(noTinEl, tinEl, "tin", "000000000");
+  const applyNoSssToggle = wireDefaultToggle(noSssEl, sssEl, "sss", "0000000000");
+  const applyNoPhilHealthToggle = wireDefaultToggle(noPhilHealthEl, philHealthEl, "philHealth", "000000000000");
+  const applyNoPagIbigToggle = wireDefaultToggle(noPagIbigEl, pagIbigEl, "pagIbig", "000000000000");
 
   /* ============================================================
    * Auto-capitalize name fields on blur
@@ -558,10 +558,10 @@
     // TIN / SSS / PhilHealth / Pag-IBIG — restore via the "I don't
     // have" toggle when the saved value is the shared default,
     // otherwise fill it directly.
-    const tinDefault = (validationRules && validationRules.tin.defaultValue) || "N/A";
-    const sssDefault = (validationRules && validationRules.sss.defaultValue) || "N/A";
-    const philHealthDefault = (validationRules && validationRules.philHealth.defaultValue) || "N/A";
-    const pagIbigDefault = (validationRules && validationRules.pagIbig.defaultValue) || "N/A";
+    const tinDefault = (validationRules && validationRules.tin.defaultValue) || "000000000";
+    const sssDefault = (validationRules && validationRules.sss.defaultValue) || "0000000000";
+    const philHealthDefault = (validationRules && validationRules.philHealth.defaultValue) || "000000000000";
+    const pagIbigDefault = (validationRules && validationRules.pagIbig.defaultValue) || "000000000000";
 
     noTinEl.checked = data.tin === tinDefault; applyNoTinToggle();
     if (!noTinEl.checked) tinEl.value = data.tin || "";
