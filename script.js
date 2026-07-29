@@ -406,10 +406,10 @@
     return apply;
   }
 
-  const applyNoTinToggle = wireDefaultToggle(noTinEl, tinEl, "tin", "055555555");
-  const applyNoSssToggle = wireDefaultToggle(noSssEl, sssEl, "sss", "0555555555");
-  const applyNoPhilHealthToggle = wireDefaultToggle(noPhilHealthEl, philHealthEl, "philHealth", "055555555555");
-  const applyNoPagIbigToggle = wireDefaultToggle(noPagIbigEl, pagIbigEl, "pagIbig", "055555555555");
+  const applyNoTinToggle = wireDefaultToggle(noTinEl, tinEl, "tin", "N/A");
+  const applyNoSssToggle = wireDefaultToggle(noSssEl, sssEl, "sss", "N/A");
+  const applyNoPhilHealthToggle = wireDefaultToggle(noPhilHealthEl, philHealthEl, "philHealth", "N/A");
+  const applyNoPagIbigToggle = wireDefaultToggle(noPagIbigEl, pagIbigEl, "pagIbig", "N/A");
 
   /* ============================================================
    * Auto-capitalize name fields on blur
