@@ -558,10 +558,10 @@
     // TIN / SSS / PhilHealth / Pag-IBIG — restore via the "I don't
     // have" toggle when the saved value is the shared default,
     // otherwise fill it directly.
-    const tinDefault = (validationRules && validationRules.tin.defaultValue) || "055555555";
-    const sssDefault = (validationRules && validationRules.sss.defaultValue) || "0555555555";
-    const philHealthDefault = (validationRules && validationRules.philHealth.defaultValue) || "055555555555";
-    const pagIbigDefault = (validationRules && validationRules.pagIbig.defaultValue) || "055555555555";
+    const tinDefault = (validationRules && validationRules.tin.defaultValue) || "N/A";
+    const sssDefault = (validationRules && validationRules.sss.defaultValue) || "N/A";
+    const philHealthDefault = (validationRules && validationRules.philHealth.defaultValue) || "N/A";
+    const pagIbigDefault = (validationRules && validationRules.pagIbig.defaultValue) || "N/A";
 
     noTinEl.checked = data.tin === tinDefault; applyNoTinToggle();
     if (!noTinEl.checked) tinEl.value = data.tin || "";
