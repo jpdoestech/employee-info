@@ -66,7 +66,7 @@
       <div class="gf-question">
         <label class="gf-label">Last Name<span class="req">*</span></label>
         <input type="text" id="lastName" autocomplete="family-name">
-        <div class="gf-hint">Auto-capitalized, e.g. "dela cruz" becomes "Dela Cruz"</div>
+        <!-- <div class="gf-hint">Auto-capitalized, e.g. "dela cruz" becomes "Dela Cruz"</div> -->
         <div class="gf-error-text" data-error-for="lastName">This is required</div>
       </div>
 
@@ -101,16 +101,19 @@
       <div class="gf-question">
         <label class="gf-label">Contact Number<span class="req">*</span></label>
         <input type="tel" id="contactNumber" maxlength="11" placeholder="09161234567">
+        <div class="gf-hint">Please enter a valid contact number/div>
         <div class="gf-error-text" data-error-for="contactNumber">Must be 11 digits, e.g. 09161234567</div>
       </div>
 
       <!-- ============================================================ -->
       <p class="gf-section-title">Home Address</p>
-      <p class="gf-section-sub">Street/Village entered here is combined with Barangay, City/Municipality, Province, and Region into the record's Complete Address.</p>
+      
+     <!-- <p class="gf-section-sub">Street/Village entered here is combined with Barangay, City/Municipality, Province, and Region into the record's Complete Address.</p> -->
 
       <div class="gf-question">
         <label class="gf-label">Street / Village<span class="req">*</span></label>
         <input type="text" id="homeStreet" placeholder="e.g. Narra St., Lower Village">
+        <div class="gf-hint">Please enter: (Street / Village / Lot / Block / Purok) only.</div>
         <div class="gf-error-text" data-error-for="homeStreet">This is required</div>
       </div>
 
@@ -150,6 +153,7 @@
       <div class="gf-question">
         <label class="gf-label">Place Of Birth<span class="req">*</span></label>
         <input type="text" id="placeOfBirth" placeholder="e.g. Davao City / hospital or city of birth">
+        <div class="gf-hint">Sample of entry: SPMC, Davao City</div>
         <div class="gf-error-text" data-error-for="placeOfBirth">This is required</div>
       </div>
 
@@ -266,6 +270,7 @@
       <div class="gf-question">
         <label class="gf-label">Street / Village<span class="req">*</span></label>
         <input type="text" id="emergencyStreet" placeholder="e.g. Narra St., Lower Village">
+        <div class="gf-hint">Please enter: (Street / Village / Lot / Block / Purok) only.</div>
         <div class="gf-error-text" data-error-for="emergencyStreet">This is required</div>
       </div>
 
