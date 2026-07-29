@@ -1,0 +1,390 @@
+:root {
+    --gf-purple: #673ab7;
+    --gf-purple-dark: #512da8;
+    --gf-bg: #f0ebf8;
+    --gf-card: #ffffff;
+    --gf-border: #dadce0;
+    --gf-text: #202124;
+    --gf-text-secondary: #5f6368;
+    --gf-error: #d93025;
+    --gf-radius: 8px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    background: var(--gf-bg);
+    font-family: "Roboto", "Google Sans", Arial, sans-serif;
+    color: var(--gf-text);
+    overflow-x: hidden;
+  }
+
+  .gf-topbar { height: 10px; background: var(--gf-purple); }
+
+  .gf-container {
+    width: 100%;
+    max-width: 700px;
+    margin: 24px auto 80px;
+    padding: 0 16px;
+  }
+
+  .gf-card {
+    background: var(--gf-card);
+    border: 1px solid var(--gf-border);
+    border-radius: var(--gf-radius);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .gf-header-card { border-top: 10px solid var(--gf-purple); }
+
+  .gf-header-inner { padding: 24px 24px 20px; }
+
+  .gf-title { font-size: 28px; font-weight: 400; margin: 0 0 8px; }
+
+  .gf-desc { font-size: 14px; color: var(--gf-text-secondary); line-height: 1.5; margin: 0; }
+
+  .gf-required-note { font-size: 13px; color: var(--gf-error); padding: 0 24px 16px; margin: 0; }
+
+  .gf-section-title {
+    font-size: 16px;
+    font-weight: 500;
+    padding: 20px 24px 4px;
+    margin: 0;
+    color: var(--gf-purple-dark);
+    border-top: 1px solid var(--gf-border);
+  }
+
+  .gf-section-sub {
+    font-size: 12px;
+    color: var(--gf-text-secondary);
+    padding: 0 24px 8px;
+    margin: 0;
+  }
+
+  .gf-question { padding: 16px 24px 20px; }
+
+  .gf-question:first-of-type { padding-top: 4px; }
+
+  .gf-row {
+    display: flex;
+    gap: 16px;
+  }
+
+  .gf-row .gf-question { flex: 1; padding-left: 0; padding-right: 0; }
+  .gf-row { padding: 0 24px; }
+
+  /* Two-column rows (Country/Postal Code, TIN/SSS-GSIS, etc.) can
+     end up with mismatched heights when only one side has a hint
+     or checkbox note below it, or when a checkbox label wraps to
+     two lines on one side but not the other. Making each column
+     a flex column and anchoring its trailing hint/checkbox line
+     to the bottom keeps both sides flush regardless of how much
+     text either one has. */
+  .gf-row .gf-question {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gf-row .gf-question .gf-hint,
+  .gf-row .gf-question .gf-checkbox-line {
+    margin-top: auto;
+  }
+
+  .gf-label { font-size: 14px; margin-bottom: 8px; display: block; }
+
+  .gf-label .req { color: var(--gf-error); margin-left: 2px; }
+
+  input[type="text"],
+  input[type="tel"],
+  input[type="email"],
+  input[type="date"],
+  input[type="number"],
+  select {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    /* 16px avoids iOS Safari auto-zooming the page on focus */
+    font-size: 16px;
+    font-family: inherit;
+    color: var(--gf-text);
+    border: none;
+    border-bottom: 1px solid var(--gf-border);
+    background: transparent;
+    padding: 10px 4px;
+    /* Fixed height + line-height instead of letting each element
+       size itself from its own content — browsers (Chrome on
+       Windows especially) apply slightly different intrinsic
+       padding to <select> vs <input>, even with appearance:none,
+       which throws off the underline alignment between two
+       fields sitting side by side in a .gf-row. Locking both to
+       the same box height removes that discrepancy. */
+    height: 44px;
+    line-height: 24px;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  select {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path fill='%235f6368' d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 2px center;
+    padding-right: 28px;
+  }
+
+  select:disabled, input:disabled {
+    color: #9aa0a6;
+    border-bottom-style: dotted;
+    cursor: not-allowed;
+    background-color: transparent;
+  }
+
+  input:focus, select:focus {
+    border-bottom: 2px solid var(--gf-purple);
+    padding-bottom: 7px;
+  }
+
+  input.gf-invalid, select.gf-invalid { border-bottom: 2px solid var(--gf-error); }
+
+  .gf-error-text {
+    font-size: 12px;
+    color: var(--gf-error);
+    margin-top: 6px;
+    display: none;
+  }
+
+  .gf-error-text.show { display: block; }
+
+  .gf-hint { font-size: 12px; color: var(--gf-text-secondary); margin-top: 6px; }
+
+  /* Checkbox / toggle rows */
+  .gf-toggle-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 16px 24px;
+    background: #f8f6fc;
+    border-top: 1px solid var(--gf-border);
+  }
+
+  .gf-toggle-row input[type="checkbox"] {
+    width: auto;
+    margin-top: 3px;
+    accent-color: var(--gf-purple);
+  }
+
+  .gf-toggle-row label { font-size: 13px; color: var(--gf-text); cursor: pointer; }
+
+  .gf-checkbox-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .gf-checkbox-line input[type="checkbox"] {
+    width: auto;
+    accent-color: var(--gf-purple);
+  }
+
+  .gf-checkbox-line label { font-size: 14px; cursor: pointer; }
+
+  /* Radio group (Preferred Mailing Address) */
+  .gf-radio-group { display: flex; gap: 24px; margin-top: 4px; }
+
+  .gf-radio-option { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+
+  .gf-radio-option input[type="radio"] { accent-color: var(--gf-purple); }
+
+  .gf-employer-fields.gf-collapsed { display: none; }
+
+  .gf-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 24px 40px;
+    flex-wrap: wrap;
+  }
+
+  .gf-submit-btn {
+    background: var(--gf-purple);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 12px 24px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    flex: 1 1 auto;
+    min-height: 44px; /* comfortable touch target */
+  }
+
+  .gf-submit-btn:hover { background: var(--gf-purple-dark); }
+
+  .gf-submit-btn:disabled { background: #c9c9c9; cursor: not-allowed; }
+
+  .gf-clear-btn {
+    background: none;
+    border: none;
+    color: var(--gf-purple);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 10px 8px;
+    min-height: 44px;
+  }
+
+  .gf-spinner {
+    display: none;
+    width: 16px; height: 16px;
+    border: 2px solid #ffffff88;
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: gf-spin 0.7s linear infinite;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .gf-spinner.show { display: inline-block; }
+
+  @keyframes gf-spin { to { transform: rotate(360deg); } }
+
+  .gf-banner { display: none; font-size: 13px; padding: 12px 16px; border-radius: 4px; margin: 0 0 16px; }
+
+  .gf-banner.show { display: block; }
+
+  .gf-banner.error { background: #fce8e6; color: var(--gf-error); }
+
+  .gf-success-card { display: none; text-align: center; padding: 48px 24px; }
+
+  .gf-success-card.show { display: block; }
+
+  .gf-success-icon { font-size: 48px; color: #34a853; margin-bottom: 8px; }
+
+  .gf-success-title { font-size: 18px; margin: 0 0 8px; }
+
+  .gf-success-sub { font-size: 14px; color: var(--gf-text-secondary); margin: 0 0 20px; }
+
+  .gf-link-btn { background: none; border: none; color: var(--gf-purple); font-size: 14px; cursor: pointer; }
+
+  #formCard.gf-hidden { display: none; }
+
+  /* ============================================================
+   * v4.1: Retrieve / edit an existing response
+   * ========================================================== */
+
+  .gf-lookup-card { padding: 16px 24px; }
+
+  .gf-lookup-toggle { padding: 0; font-weight: 500; }
+
+  .gf-lookup-panel { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--gf-border); }
+
+  .gf-lookup-desc { font-size: 13px; color: var(--gf-text-secondary); margin: 0 0 8px; }
+
+  .gf-lookup-panel .gf-row { padding: 0; }
+
+  .gf-lookup-panel .gf-question { padding: 8px 0; }
+
+  .gf-lookup-actions { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+
+  .gf-edit-banner {
+    background: #e8f0fe;
+    color: var(--gf-purple-dark);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    justify-content: space-between;
+  }
+
+  .gf-edit-banner.show { display: flex; }
+
+  .gf-exit-edit-btn { font-size: 13px; text-decoration: underline; white-space: nowrap; }
+
+  .gf-reference-box {
+    background: var(--gf-bg);
+    border: 1px solid var(--gf-border);
+    border-radius: var(--gf-radius);
+    padding: 16px 20px;
+    margin: 0 auto 20px;
+    max-width: 420px;
+  }
+
+  .gf-reference-label { font-size: 13px; font-weight: 500; color: var(--gf-text-secondary); margin: 0 0 8px; }
+
+  .gf-reference-code-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
+
+  .gf-reference-code {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--gf-purple-dark);
+    font-family: "Roboto Mono", monospace;
+  }
+
+  .gf-copy-btn {
+    background: var(--gf-purple);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .gf-copy-btn:hover { background: var(--gf-purple-dark); }
+
+  .gf-copy-btn.copied { background: #34a853; }
+
+  .gf-reference-hint { font-size: 12px; color: var(--gf-text-secondary); margin: 10px 0 0; }
+
+  /* ============================================================
+   * Responsive behavior
+   * ========================================================== */
+
+  /* Tablets / narrower desktop windows */
+  @media (max-width: 760px) {
+    .gf-container { margin: 16px auto 64px; padding: 0 12px; }
+  }
+
+  /* Phones */
+  @media (max-width: 520px) {
+    .gf-row { flex-direction: column; gap: 0; }
+    .gf-row .gf-question { padding-left: 0; padding-right: 0; }
+
+    .gf-title { font-size: 22px; }
+    .gf-header-inner { padding: 18px 16px 16px; }
+    .gf-required-note { padding: 0 16px 12px; }
+    .gf-section-title { padding: 16px 16px 4px; }
+    .gf-section-sub { padding: 0 16px 8px; }
+    .gf-question { padding: 12px 16px 16px; }
+    .gf-row { padding: 0 16px; }
+    .gf-toggle-row { padding: 12px 16px; }
+
+    .gf-footer { padding: 8px 16px 32px; }
+    .gf-submit-btn, .gf-clear-btn { width: 100%; }
+    .gf-clear-btn { order: 2; text-align: center; }
+    .gf-submit-btn { order: 1; }
+
+    .gf-radio-group { flex-direction: column; gap: 10px; }
+
+    .gf-lookup-card { padding: 14px 16px; }
+    .gf-lookup-actions { flex-direction: column; align-items: stretch; }
+    .gf-lookup-actions .gf-submit-btn, .gf-lookup-actions .gf-clear-btn { width: 100%; }
+    .gf-edit-banner { flex-direction: column; align-items: flex-start; }
+  }
+
+  /* Larger touch targets on touch devices (checkboxes/radios are
+     otherwise tiny native controls that are hard to tap accurately) */
+  @media (pointer: coarse) {
+    .gf-toggle-row input[type="checkbox"],
+    .gf-checkbox-line input[type="checkbox"],
+    .gf-radio-option input[type="radio"] {
+      width: 20px;
+      height: 20px;
+    }
+  }
