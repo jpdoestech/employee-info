@@ -8,7 +8,7 @@
    * Country lists), submission, and entry lookup go through this
    * — the address cascade below is served as static files.
    * ========================================================== */
-  const API_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+  const API_URL = "https://script.google.com/macros/s/AKfycbxK8daSyXE4B0tOH0guAiimrjOQbyX-kMGc2yU9x35NVfbDvC4GKh6sT2Ix_e6mdhgA/exec";
 
   function apiGet(action, params) {
     const qs = new URLSearchParams(Object.assign({ action }, params || {}));
