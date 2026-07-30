@@ -245,6 +245,7 @@
 
     function onRegionChange() {
       const regionCode = regionEl.value;
+      const regionName = selectedName(regionEl);
       resetSelect(provinceEl, "Loading provinces\u2026");
       resetSelect(cityEl, "Select Province first");
       resetSelect(barangayEl, "Select City/Municipality first");
@@ -258,8 +259,14 @@
             provinceEl.disabled = false;
             fillSelect(provinceEl, provinces, "Select Province");
           } else {
+            // Province-less region (e.g. NCR): use the region itself
+            // as the "province" value so the field still carries a
+            // value instead of submitting empty and failing the
+            // required-field check server-side.
             state.provinceLevelExists = false;
-            resetSelect(provinceEl, "N/A for this region");
+            fillSelect(provinceEl, [{ code: regionCode, name: regionName }], "N/A for this region");
+            provinceEl.value = regionCode;
+            provinceEl.disabled = true;
             loadCitiesForRegion(regionCode);
           }
         })
@@ -311,6 +318,7 @@
     async function restore(regionCode, provinceCode, cityCode, barangayCode) {
       if (!regionCode) return;
       regionEl.value = regionCode;
+      const regionName = selectedName(regionEl);
 
       try {
         const provinces = await callApi("getProvinces", regionCode);
@@ -321,7 +329,9 @@
           if (provinceCode) provinceEl.value = provinceCode;
         } else {
           state.provinceLevelExists = false;
-          resetSelect(provinceEl, "N/A for this region");
+          fillSelect(provinceEl, [{ code: regionCode, name: regionName }], "N/A for this region");
+          provinceEl.value = regionCode;
+          provinceEl.disabled = true;
         }
 
         const cities = state.provinceLevelExists
@@ -701,8 +711,8 @@
       homeStreet: el("homeStreet").value.trim(),
       homeRegionCode: homeRegionEl.value,
       homeRegionName: selectedName(homeRegionEl),
-      homeProvinceCode: homeProvinceEl.value,
-      homeProvinceName: homeCascade.state.provinceLevelExists ? selectedName(homeProvinceEl) : "",
+      homeProvinceCode: homeCascade.state.provinceLevelExists ? homeProvinceEl.value : homeRegionEl.value,
+      homeProvinceName: homeCascade.state.provinceLevelExists ? selectedName(homeProvinceEl) : selectedName(homeRegionEl),
       homeCityCode: homeCityEl.value,
       homeCityName: selectedName(homeCityEl),
       homeBarangayCode: homeBarangayEl.value,
@@ -731,8 +741,8 @@
       emergencyStreet: el("emergencyStreet").value.trim(),
       emergencyRegionCode: emergencyRegionEl.value,
       emergencyRegionName: selectedName(emergencyRegionEl),
-      emergencyProvinceCode: emergencyProvinceEl.value,
-      emergencyProvinceName: emergencyCascade.state.provinceLevelExists ? selectedName(emergencyProvinceEl) : "",
+      emergencyProvinceCode: emergencyCascade.state.provinceLevelExists ? emergencyProvinceEl.value : emergencyRegionEl.value,
+      emergencyProvinceName: emergencyCascade.state.provinceLevelExists ? selectedName(emergencyProvinceEl) : selectedName(emergencyRegionEl),
       emergencyCityCode: emergencyCityEl.value,
       emergencyCityName: selectedName(emergencyCityEl),
       emergencyBarangayCode: emergencyBarangayEl.value,
