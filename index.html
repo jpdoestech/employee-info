@@ -250,13 +250,15 @@
         <div class="gf-upload-box" id="profilePhotoBox">
           <img id="profilePhotoPreview" class="gf-upload-preview" style="display:none;">
           <div class="gf-upload-placeholder" id="profilePhotoPlaceholder">
-            <span>Choose a file or take a photo</span>
+            <span>Take a photo or choose one from your gallery</span>
           </div>
           <div class="gf-upload-actions">
-            <label class="gf-upload-btn" for="profilePhotoInput">Choose Photo</label>
+            <label class="gf-upload-btn" for="profilePhotoCameraInput">Take Photo</label>
+            <label class="gf-upload-btn gf-upload-btn-secondary" for="profilePhotoGalleryInput">Choose from Gallery</label>
             <button type="button" class="gf-clear-btn gf-upload-remove" id="profilePhotoRemoveBtn" style="display:none;">Remove</button>
           </div>
-          <input type="file" id="profilePhotoInput" accept="image/*" capture="environment" class="gf-upload-input">
+          <input type="file" id="profilePhotoCameraInput" accept="image/*" capture="environment" class="gf-upload-input">
+          <input type="file" id="profilePhotoGalleryInput" accept="image/*" class="gf-upload-input">
         </div>
         <div class="gf-hint" id="profilePhotoExistingHint" style="display:none;">A photo is already on file — choose a new one only if you want to replace it.</div>
         <div class="gf-error-text" data-error-for="profilePhoto">Please provide a Profile/ID photo</div>
@@ -281,13 +283,15 @@
           <div class="gf-upload-box" id="signatureUploadBox">
             <img id="signaturePhotoPreview" class="gf-upload-preview" style="display:none;">
             <div class="gf-upload-placeholder" id="signaturePhotoPlaceholder">
-              <span>Choose a file or take a photo</span>
+              <span>Take a photo or choose one from your gallery</span>
             </div>
             <div class="gf-upload-actions">
-              <label class="gf-upload-btn" for="signaturePhotoInput">Choose Photo</label>
+              <label class="gf-upload-btn" for="signaturePhotoCameraInput">Take Photo</label>
+              <label class="gf-upload-btn gf-upload-btn-secondary" for="signaturePhotoGalleryInput">Choose from Gallery</label>
               <button type="button" class="gf-clear-btn gf-upload-remove" id="signaturePhotoRemoveBtn" style="display:none;">Remove</button>
             </div>
-            <input type="file" id="signaturePhotoInput" accept="image/*" capture="environment" class="gf-upload-input">
+            <input type="file" id="signaturePhotoCameraInput" accept="image/*" capture="environment" class="gf-upload-input">
+            <input type="file" id="signaturePhotoGalleryInput" accept="image/*" class="gf-upload-input">
           </div>
         </div>
 

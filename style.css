@@ -437,6 +437,14 @@
 
 .gf-upload-btn:hover { background: var(--gf-purple-dark); }
 
+.gf-upload-btn-secondary {
+  background: transparent;
+  color: var(--gf-purple);
+  border: 1px solid var(--gf-purple);
+}
+
+.gf-upload-btn-secondary:hover { background: #f0ebf8; }
+
 .gf-upload-input {
   /* Visually hidden but still accessible/clickable via its
      associated <label class="gf-upload-btn">. */

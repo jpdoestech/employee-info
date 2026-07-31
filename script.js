@@ -111,6 +111,9 @@
       case "getEntryByReference":
         return apiGet("getEntryByReference", { lastName: args[0], code: args[1] });
 
+      case "uploadImage":
+        return apiPost("uploadImage", args[0]);
+
       case "submitForm":
         return apiPost("submitForm", args[0]);
 
@@ -155,7 +158,8 @@
   const pagIbigEl = el("pagIbigNo"), noPagIbigEl = el("noPagIbig");
 
   // Profile/ID Photo upload
-  const profilePhotoInput = el("profilePhotoInput"), profilePhotoPreview = el("profilePhotoPreview"),
+  const profilePhotoCameraInput = el("profilePhotoCameraInput"), profilePhotoGalleryInput = el("profilePhotoGalleryInput"),
+        profilePhotoPreview = el("profilePhotoPreview"),
         profilePhotoPlaceholder = el("profilePhotoPlaceholder"), profilePhotoRemoveBtn = el("profilePhotoRemoveBtn"),
         profilePhotoExistingHint = el("profilePhotoExistingHint");
 
@@ -163,7 +167,8 @@
   const signatureDrawTabBtn = el("signatureDrawTabBtn"), signatureUploadTabBtn = el("signatureUploadTabBtn"),
         signatureDrawPanel = el("signatureDrawPanel"), signatureUploadPanel = el("signatureUploadPanel"),
         signatureCanvas = el("signatureCanvas"), signatureClearBtn = el("signatureClearBtn"),
-        signaturePhotoInput = el("signaturePhotoInput"), signaturePhotoPreview = el("signaturePhotoPreview"),
+        signaturePhotoCameraInput = el("signaturePhotoCameraInput"), signaturePhotoGalleryInput = el("signaturePhotoGalleryInput"),
+        signaturePhotoPreview = el("signaturePhotoPreview"),
         signaturePhotoPlaceholder = el("signaturePhotoPlaceholder"), signaturePhotoRemoveBtn = el("signaturePhotoRemoveBtn"),
         signatureExistingHint = el("signatureExistingHint");
 
@@ -500,9 +505,10 @@
     removeBtnEl.style.display = "none";
   }
 
-  // --- Profile/ID Photo ---
-  profilePhotoInput.addEventListener("change", async () => {
-    const file = profilePhotoInput.files[0];
+  // --- Profile/ID Photo (Take Photo and Choose from Gallery both
+  //     feed the same handler — see the mobile-camera-hijack note
+  //     on signature's twin inputs below for why there are two) ---
+  async function handleProfilePhotoFile(file) {
     if (!file) return;
     try {
       profilePhotoDataUrl = await compressImageFile(file, 1200, 0.8);
@@ -514,11 +520,14 @@
       showBanner("Could not process that photo. Please try a different file.");
       console.error(e);
     }
-  });
+  }
+  profilePhotoCameraInput.addEventListener("change", () => handleProfilePhotoFile(profilePhotoCameraInput.files[0]));
+  profilePhotoGalleryInput.addEventListener("change", () => handleProfilePhotoFile(profilePhotoGalleryInput.files[0]));
 
   profilePhotoRemoveBtn.addEventListener("click", () => {
     profilePhotoDataUrl = "";
-    profilePhotoInput.value = "";
+    profilePhotoCameraInput.value = "";
+    profilePhotoGalleryInput.value = "";
     hideUploadPreview(profilePhotoPreview, profilePhotoPlaceholder, profilePhotoRemoveBtn);
     if (existingProfilePhotoUrl) profilePhotoExistingHint.style.display = "block";
   });
@@ -584,8 +593,11 @@
   });
 
   // --- Signature: Upload tab ---
-  signaturePhotoInput.addEventListener("change", async () => {
-    const file = signaturePhotoInput.files[0];
+  // Two separate inputs (camera vs. gallery) rather than one with
+  // capture="environment" — on many mobile browsers that attribute
+  // forces the camera app open directly and skips the gallery/file
+  // picker entirely, so there'd be no way to pick an existing photo.
+  async function handleSignaturePhotoFile(file) {
     if (!file) return;
     try {
       signatureDataUrl = await compressImageFile(file, 1000, 0.85);
@@ -598,11 +610,14 @@
       showBanner("Could not process that photo. Please try a different file.");
       console.error(e);
     }
-  });
+  }
+  signaturePhotoCameraInput.addEventListener("change", () => handleSignaturePhotoFile(signaturePhotoCameraInput.files[0]));
+  signaturePhotoGalleryInput.addEventListener("change", () => handleSignaturePhotoFile(signaturePhotoGalleryInput.files[0]));
 
   signaturePhotoRemoveBtn.addEventListener("click", () => {
     signatureDataUrl = "";
-    signaturePhotoInput.value = "";
+    signaturePhotoCameraInput.value = "";
+    signaturePhotoGalleryInput.value = "";
     hideUploadPreview(signaturePhotoPreview, signaturePhotoPlaceholder, signaturePhotoRemoveBtn);
     if (existingSignatureUrl) signatureExistingHint.style.display = "block";
   });
@@ -798,7 +813,7 @@
     // Profile/ID Photo — show the file already on record as a
     // preview; a new upload is only required to replace it.
     profilePhotoDataUrl = "";
-    profilePhotoInput.value = "";
+    profilePhotoCameraInput.value = ""; profilePhotoGalleryInput.value = "";
     existingProfilePhotoUrl = data.profilePhotoUrl || "";
     if (existingProfilePhotoUrl) {
       showUploadPreview(profilePhotoPreview, profilePhotoPlaceholder, profilePhotoRemoveBtn, existingProfilePhotoUrl);
@@ -812,7 +827,7 @@
     // Signature — same idea; defaults to the Upload tab so the
     // existing image can actually be shown (drawing starts blank).
     signatureDataUrl = "";
-    signaturePhotoInput.value = "";
+    signaturePhotoCameraInput.value = ""; signaturePhotoGalleryInput.value = "";
     hasDrawnSignature = false;
     fillSignatureCanvasWhite();
     existingSignatureUrl = data.signatureUrl || "";
@@ -990,10 +1005,9 @@
       sssNo: el("sssNo").value.trim(),
       tin: el("tin").value.trim(),
 
-      // Empty string means "keep whatever's already on file" —
-      // the server only replaces it when given a real data URL.
-      profilePhoto: profilePhotoDataUrl,
-      signature: getCurrentSignatureDataUrl(),
+      // profilePhotoUrl / signatureUrl are resolved separately via
+      // uploadImage() and merged into this payload by the submit
+      // handler below — see resolveProfilePhotoUrl()/resolveSignatureUrl().
 
       emergencyContactPerson: toTitleCase(el("emergencyContactPerson").value),
       emergencyRelationship: emergencyRelationshipEl.value,
@@ -1019,7 +1033,53 @@
     spinner.classList.toggle("show", isSubmitting);
   }
 
-  submitBtn.addEventListener("click", () => {
+  function makeFilenameBase(suffix) {
+    const safeName = toTitleCase(el("lastName").value).replace(/[^a-zA-Z0-9]+/g, "_") || "employee";
+    return `${Date.now()}_${safeName}_${suffix}`;
+  }
+
+  /**
+   * Uploads the Profile/ID Photo if a new one was chosen this
+   * session, and returns the URL to submit — either the freshly
+   * uploaded one, or whatever was already on record (unchanged).
+   * Successfully uploaded URLs are cached into
+   * existingProfilePhotoUrl, so retrying after a later failure
+   * (e.g. the final submitForm call) won't re-upload the same image.
+   */
+  async function resolveProfilePhotoUrl() {
+    if (!profilePhotoDataUrl) return existingProfilePhotoUrl;
+    const result = await callApi("uploadImage", {
+      folderType: "profile",
+      dataUrl: profilePhotoDataUrl,
+      filenameBase: makeFilenameBase("profile")
+    });
+    if (!result || result.status !== "success") {
+      throw new Error((result && result.message) || "Could not upload the Profile/ID photo.");
+    }
+    existingProfilePhotoUrl = result.url;
+    profilePhotoDataUrl = "";
+    return existingProfilePhotoUrl;
+  }
+
+  /** Same idea as resolveProfilePhotoUrl(), for the signature. */
+  async function resolveSignatureUrl() {
+    const fresh = getCurrentSignatureDataUrl();
+    if (!fresh) return existingSignatureUrl;
+    const result = await callApi("uploadImage", {
+      folderType: "signature",
+      dataUrl: fresh,
+      filenameBase: makeFilenameBase("signature")
+    });
+    if (!result || result.status !== "success") {
+      throw new Error((result && result.message) || "Could not upload the signature.");
+    }
+    existingSignatureUrl = result.url;
+    signatureDataUrl = "";
+    hasDrawnSignature = false;
+    return existingSignatureUrl;
+  }
+
+  submitBtn.addEventListener("click", async () => {
     hideBanner();
 
     if (!validate()) {
@@ -1029,25 +1089,50 @@
 
     setSubmitting(true);
 
-    callApi("submitForm", buildPayload())
-      .then(result => {
-        setSubmitting(false);
-        if (result.status === "success") {
-          successTitleEl.textContent = result.message || "This entry has been recorded";
-          successReferenceCodeEl.textContent = result.referenceCode || "";
-          successLastNameEl.textContent = result.lastName || "";
-          exitEditMode();
-          formEl.style.display = "none";
-          successCard.classList.add("show");
-        } else {
-          showBanner(result.message || "Something went wrong. Please try again.");
-        }
-      })
-      .catch(err => {
-        setSubmitting(false);
-        showBanner("Could not submit the form. Please check your connection and try again.");
-        console.error(err);
-      });
+    try {
+
+      // Images are uploaded as their own separate, fast requests
+      // first — keeping the final submitForm call itself quick
+      // (just a sheet write). Combining slow Drive uploads with the
+      // sheet write in a single request is what previously caused
+      // occasional "Could not submit" errors even though the entry
+      // had actually already been saved.
+      submitBtnLabel.textContent = "Uploading photo\u2026";
+      const profilePhotoUrl = await resolveProfilePhotoUrl();
+
+      submitBtnLabel.textContent = "Uploading signature\u2026";
+      const signatureUrl = await resolveSignatureUrl();
+
+      submitBtnLabel.textContent = "Saving\u2026";
+      const payload = buildPayload();
+      payload.profilePhotoUrl = profilePhotoUrl;
+      payload.signatureUrl = signatureUrl;
+
+      const result = await callApi("submitForm", payload);
+
+      setSubmitting(false);
+      submitBtnLabel.textContent = "Submit";
+
+      if (result.status === "success") {
+        successTitleEl.textContent = result.message || "This entry has been recorded";
+        successReferenceCodeEl.textContent = result.referenceCode || "";
+        successLastNameEl.textContent = result.lastName || "";
+        exitEditMode();
+        formEl.style.display = "none";
+        successCard.classList.add("show");
+      } else {
+        showBanner(result.message || "Something went wrong. Please try again.");
+      }
+
+    } catch (err) {
+
+      setSubmitting(false);
+      submitBtnLabel.textContent = "Submit";
+      showBanner(err.message || "Could not submit the form. Please check your connection and try again.");
+      console.error(err);
+
+    }
+
   });
 
   copyReferenceBtn.addEventListener("click", () => {
