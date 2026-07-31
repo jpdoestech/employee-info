@@ -388,3 +388,106 @@
       height: 20px;
     }
   }
+
+/* ============================================================
+ * Profile / ID Photo + Signature upload components
+ * ============================================================ */
+
+.gf-upload-box {
+  border: 1px dashed var(--gf-border);
+  border-radius: var(--gf-radius);
+  padding: 16px;
+  text-align: center;
+  background: #fafafa;
+}
+
+.gf-upload-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 220px;
+  margin: 0 auto 12px;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.gf-upload-placeholder {
+  font-size: 13px;
+  color: var(--gf-text-secondary);
+  margin-bottom: 12px;
+}
+
+.gf-upload-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.gf-upload-btn {
+  display: inline-block;
+  background: var(--gf-purple);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.gf-upload-btn:hover { background: var(--gf-purple-dark); }
+
+.gf-upload-input {
+  /* Visually hidden but still accessible/clickable via its
+     associated <label class="gf-upload-btn">. */
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Signature draw/upload tabs */
+.gf-tab-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.gf-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--gf-border);
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--gf-text-secondary);
+  cursor: pointer;
+}
+
+.gf-tab-btn.active {
+  background: var(--gf-purple);
+  border-color: var(--gf-purple);
+  color: #fff;
+  font-weight: 500;
+}
+
+.gf-signature-canvas {
+  display: block;
+  width: 100%;
+  max-width: 600px;
+  height: 200px;
+  border: 1px dashed var(--gf-border);
+  border-radius: var(--gf-radius);
+  background: #fafafa;
+  touch-action: none; /* allow drawing with touch without scrolling the page */
+  cursor: crosshair;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 520px) {
+  .gf-upload-actions { flex-direction: column; align-items: stretch; }
+  .gf-tab-group { flex-direction: column; }
+}

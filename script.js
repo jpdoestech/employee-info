@@ -154,6 +154,19 @@
   const philHealthEl = el("philHealthNo"), noPhilHealthEl = el("noPhilHealth");
   const pagIbigEl = el("pagIbigNo"), noPagIbigEl = el("noPagIbig");
 
+  // Profile/ID Photo upload
+  const profilePhotoInput = el("profilePhotoInput"), profilePhotoPreview = el("profilePhotoPreview"),
+        profilePhotoPlaceholder = el("profilePhotoPlaceholder"), profilePhotoRemoveBtn = el("profilePhotoRemoveBtn"),
+        profilePhotoExistingHint = el("profilePhotoExistingHint");
+
+  // Signature — Draw or Upload
+  const signatureDrawTabBtn = el("signatureDrawTabBtn"), signatureUploadTabBtn = el("signatureUploadTabBtn"),
+        signatureDrawPanel = el("signatureDrawPanel"), signatureUploadPanel = el("signatureUploadPanel"),
+        signatureCanvas = el("signatureCanvas"), signatureClearBtn = el("signatureClearBtn"),
+        signaturePhotoInput = el("signaturePhotoInput"), signaturePhotoPreview = el("signaturePhotoPreview"),
+        signaturePhotoPlaceholder = el("signaturePhotoPlaceholder"), signaturePhotoRemoveBtn = el("signaturePhotoRemoveBtn"),
+        signatureExistingHint = el("signatureExistingHint");
+
   // "View/Edit my response" lookup
   const showLookupBtn = el("showLookupBtn"), lookupPanel = el("lookupPanel");
   const lookupLastNameEl = el("lookupLastName"), lookupCodeEl = el("lookupCode");
@@ -225,9 +238,8 @@
 
   function markInvalid(idOrEl, invalid) {
     const targetEl = typeof idOrEl === "string" ? el(idOrEl) : idOrEl;
-    if (!targetEl) return;
-    targetEl.classList && targetEl.classList.toggle("gf-invalid", invalid);
-    const errKey = typeof idOrEl === "string" ? idOrEl : targetEl.id;
+    if (targetEl) targetEl.classList && targetEl.classList.toggle("gf-invalid", invalid);
+    const errKey = typeof idOrEl === "string" ? idOrEl : (targetEl && targetEl.id);
     const errEl = document.querySelector(`[data-error-for="${errKey}"]`);
     if (errEl) errEl.classList.toggle("show", invalid);
   }
@@ -422,6 +434,204 @@
   const applyNoPagIbigToggle = wireDefaultToggle(noPagIbigEl, pagIbigEl, "pagIbig", "000000000000");
 
   /* ============================================================
+   * Profile/ID Photo + Signature (draw or upload)
+   *
+   * Both end up as compressed base64 JPEG/PNG data URLs held in
+   * memory (profilePhotoDataUrl / signatureDataUrl) until submit,
+   * at which point buildPayload() sends them to Apps Script, which
+   * saves them to Drive and stores the resulting link in the sheet.
+   *
+   * "existing*Url" holds a previously-saved Drive link when editing
+   * an entry — if the person doesn't choose a new file, buildPayload
+   * sends "" for that field and the server keeps the file already
+   * on record instead of requiring a fresh upload every time.
+   * ========================================================== */
+  let profilePhotoDataUrl = "";
+  let existingProfilePhotoUrl = "";
+  let signatureDataUrl = "";
+  let existingSignatureUrl = "";
+  let signatureMethod = "draw"; // "draw" | "upload"
+  let hasDrawnSignature = false;
+
+  /**
+   * Reads an image File, downsizes it to at most maxDimension on
+   * its longest side, and re-encodes as JPEG at the given quality —
+   * turns multi-MB camera photos into a couple hundred KB before
+   * they're ever sent anywhere.
+   */
+  function compressImageFile(file, maxDimension, quality) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Could not read the selected file."));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error("Could not read the selected image."));
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > height && width > maxDimension) {
+            height = Math.round(height * (maxDimension / width));
+            width = maxDimension;
+          } else if (height > maxDimension) {
+            width = Math.round(width * (maxDimension / height));
+            height = maxDimension;
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width; canvas.height = height;
+          canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function showUploadPreview(previewEl, placeholderEl, removeBtnEl, dataUrl) {
+    previewEl.src = dataUrl;
+    previewEl.style.display = "block";
+    placeholderEl.style.display = "none";
+    removeBtnEl.style.display = "inline-block";
+  }
+
+  function hideUploadPreview(previewEl, placeholderEl, removeBtnEl) {
+    previewEl.src = "";
+    previewEl.style.display = "none";
+    placeholderEl.style.display = "block";
+    removeBtnEl.style.display = "none";
+  }
+
+  // --- Profile/ID Photo ---
+  profilePhotoInput.addEventListener("change", async () => {
+    const file = profilePhotoInput.files[0];
+    if (!file) return;
+    try {
+      profilePhotoDataUrl = await compressImageFile(file, 1200, 0.8);
+      showUploadPreview(profilePhotoPreview, profilePhotoPlaceholder, profilePhotoRemoveBtn, profilePhotoDataUrl);
+      profilePhotoExistingHint.style.display = "none";
+      markInvalid("profilePhoto", false);
+      el("profilePhotoBox").classList.remove("gf-invalid");
+    } catch (e) {
+      showBanner("Could not process that photo. Please try a different file.");
+      console.error(e);
+    }
+  });
+
+  profilePhotoRemoveBtn.addEventListener("click", () => {
+    profilePhotoDataUrl = "";
+    profilePhotoInput.value = "";
+    hideUploadPreview(profilePhotoPreview, profilePhotoPlaceholder, profilePhotoRemoveBtn);
+    if (existingProfilePhotoUrl) profilePhotoExistingHint.style.display = "block";
+  });
+
+  // --- Signature: Draw tab ---
+  const sigCtx = signatureCanvas.getContext("2d");
+  sigCtx.lineWidth = 2.5;
+  sigCtx.lineCap = "round";
+  sigCtx.strokeStyle = "#202124";
+  let isDrawing = false;
+
+  // The canvas's CSS background is just a visual style — the
+  // actual pixel data starts fully transparent. Fill it with real
+  // white pixels so the saved PNG looks correct as a standalone
+  // image (not transparent) wherever it's viewed later.
+  function fillSignatureCanvasWhite() {
+    sigCtx.fillStyle = "#ffffff";
+    sigCtx.fillRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+  }
+  fillSignatureCanvasWhite();
+
+  function getCanvasPoint(evt) {
+    const rect = signatureCanvas.getBoundingClientRect();
+    const scaleX = signatureCanvas.width / rect.width;
+    const scaleY = signatureCanvas.height / rect.height;
+    const point = evt.touches ? evt.touches[0] : evt;
+    return { x: (point.clientX - rect.left) * scaleX, y: (point.clientY - rect.top) * scaleY };
+  }
+
+  function startDraw(evt) {
+    evt.preventDefault();
+    isDrawing = true;
+    const { x, y } = getCanvasPoint(evt);
+    sigCtx.beginPath();
+    sigCtx.moveTo(x, y);
+  }
+  function moveDraw(evt) {
+    if (!isDrawing) return;
+    evt.preventDefault();
+    const { x, y } = getCanvasPoint(evt);
+    sigCtx.lineTo(x, y);
+    sigCtx.stroke();
+    if (!hasDrawnSignature) {
+      hasDrawnSignature = true;
+      signatureCanvas.classList.remove("gf-invalid");
+      const errEl = document.querySelector('[data-error-for="signature"]');
+      if (errEl) errEl.classList.remove("show");
+    }
+  }
+  function endDraw() { isDrawing = false; }
+
+  signatureCanvas.addEventListener("mousedown", startDraw);
+  signatureCanvas.addEventListener("mousemove", moveDraw);
+  window.addEventListener("mouseup", endDraw);
+  signatureCanvas.addEventListener("touchstart", startDraw, { passive: false });
+  signatureCanvas.addEventListener("touchmove", moveDraw, { passive: false });
+  signatureCanvas.addEventListener("touchend", endDraw);
+
+  signatureClearBtn.addEventListener("click", () => {
+    fillSignatureCanvasWhite();
+    hasDrawnSignature = false;
+    signatureExistingHint.style.display = existingSignatureUrl ? "block" : "none";
+  });
+
+  // --- Signature: Upload tab ---
+  signaturePhotoInput.addEventListener("change", async () => {
+    const file = signaturePhotoInput.files[0];
+    if (!file) return;
+    try {
+      signatureDataUrl = await compressImageFile(file, 1000, 0.85);
+      showUploadPreview(signaturePhotoPreview, signaturePhotoPlaceholder, signaturePhotoRemoveBtn, signatureDataUrl);
+      signatureExistingHint.style.display = "none";
+      markInvalid("signature", false);
+      signatureCanvas.classList.remove("gf-invalid");
+      el("signatureUploadBox").classList.remove("gf-invalid");
+    } catch (e) {
+      showBanner("Could not process that photo. Please try a different file.");
+      console.error(e);
+    }
+  });
+
+  signaturePhotoRemoveBtn.addEventListener("click", () => {
+    signatureDataUrl = "";
+    signaturePhotoInput.value = "";
+    hideUploadPreview(signaturePhotoPreview, signaturePhotoPlaceholder, signaturePhotoRemoveBtn);
+    if (existingSignatureUrl) signatureExistingHint.style.display = "block";
+  });
+
+  // --- Signature: Draw / Upload tab switch ---
+  function setSignatureMethod(method) {
+    signatureMethod = method;
+    const isDraw = method === "draw";
+    signatureDrawTabBtn.classList.toggle("active", isDraw);
+    signatureUploadTabBtn.classList.toggle("active", !isDraw);
+    signatureDrawPanel.style.display = isDraw ? "block" : "none";
+    signatureUploadPanel.style.display = isDraw ? "none" : "block";
+  }
+  signatureDrawTabBtn.addEventListener("click", () => setSignatureMethod("draw"));
+  signatureUploadTabBtn.addEventListener("click", () => setSignatureMethod("upload"));
+
+  /**
+   * Resolves whatever the signature currently is, based on the
+   * active method — a freshly drawn canvas image, a freshly
+   * uploaded photo, or "" if neither was provided this session.
+   */
+  function getCurrentSignatureDataUrl() {
+    if (signatureMethod === "draw") {
+      return hasDrawnSignature ? signatureCanvas.toDataURL("image/png") : "";
+    }
+    return signatureDataUrl;
+  }
+
+  /* ============================================================
    * Auto-capitalize name fields on blur
    * ========================================================== */
   ["lastName", "firstName", "middleName", "emergencyContactPerson"].forEach(id => {
@@ -585,6 +795,38 @@
     noPagIbigEl.checked = data.pagIbigNo === pagIbigDefault; applyNoPagIbigToggle();
     if (!noPagIbigEl.checked) pagIbigEl.value = data.pagIbigNo || "";
 
+    // Profile/ID Photo — show the file already on record as a
+    // preview; a new upload is only required to replace it.
+    profilePhotoDataUrl = "";
+    profilePhotoInput.value = "";
+    existingProfilePhotoUrl = data.profilePhotoUrl || "";
+    if (existingProfilePhotoUrl) {
+      showUploadPreview(profilePhotoPreview, profilePhotoPlaceholder, profilePhotoRemoveBtn, existingProfilePhotoUrl);
+      profilePhotoRemoveBtn.style.display = "none"; // nothing new to remove yet
+      profilePhotoExistingHint.style.display = "block";
+    } else {
+      hideUploadPreview(profilePhotoPreview, profilePhotoPlaceholder, profilePhotoRemoveBtn);
+      profilePhotoExistingHint.style.display = "none";
+    }
+
+    // Signature — same idea; defaults to the Upload tab so the
+    // existing image can actually be shown (drawing starts blank).
+    signatureDataUrl = "";
+    signaturePhotoInput.value = "";
+    hasDrawnSignature = false;
+    fillSignatureCanvasWhite();
+    existingSignatureUrl = data.signatureUrl || "";
+    if (existingSignatureUrl) {
+      setSignatureMethod("upload");
+      showUploadPreview(signaturePhotoPreview, signaturePhotoPlaceholder, signaturePhotoRemoveBtn, existingSignatureUrl);
+      signaturePhotoRemoveBtn.style.display = "none";
+      signatureExistingHint.style.display = "block";
+    } else {
+      setSignatureMethod("draw");
+      hideUploadPreview(signaturePhotoPreview, signaturePhotoPlaceholder, signaturePhotoRemoveBtn);
+      signatureExistingHint.style.display = "none";
+    }
+
     el("emergencyContactPerson").value = data.emergencyContactPerson || "";
     if (data.emergencyRelationship) emergencyRelationshipEl.value = data.emergencyRelationship;
     el("emergencyContactNo").value = data.emergencyContactNo || "";
@@ -693,6 +935,20 @@
       if (!new RegExp(validationRules.pagIbig.pattern).test(el("pagIbigNo").value.trim())) { markInvalid("pagIbigNo", true); valid = false; }
     }
 
+    // Profile/ID Photo — required unless an existing one is on
+    // record (editing without choosing a replacement).
+    const profilePhotoBad = !profilePhotoDataUrl && !existingProfilePhotoUrl;
+    el("profilePhotoBox").classList.toggle("gf-invalid", profilePhotoBad);
+    document.querySelector('[data-error-for="profilePhoto"]').classList.toggle("show", profilePhotoBad);
+    if (profilePhotoBad) valid = false;
+
+    // Signature — required unless an existing one is on record.
+    const signatureBad = !getCurrentSignatureDataUrl() && !existingSignatureUrl;
+    signatureCanvas.classList.toggle("gf-invalid", signatureBad && signatureMethod === "draw");
+    el("signatureUploadBox").classList.toggle("gf-invalid", signatureBad && signatureMethod === "upload");
+    document.querySelector('[data-error-for="signature"]').classList.toggle("show", signatureBad);
+    if (signatureBad) valid = false;
+
     return valid;
   }
 
@@ -733,6 +989,11 @@
       pagIbigNo: el("pagIbigNo").value.trim(),
       sssNo: el("sssNo").value.trim(),
       tin: el("tin").value.trim(),
+
+      // Empty string means "keep whatever's already on file" —
+      // the server only replaces it when given a real data URL.
+      profilePhoto: profilePhotoDataUrl,
+      signature: getCurrentSignatureDataUrl(),
 
       emergencyContactPerson: toTitleCase(el("emergencyContactPerson").value),
       emergencyRelationship: emergencyRelationshipEl.value,
@@ -817,6 +1078,17 @@
     resetSelect(emergencyBarangayEl, "Select City/Municipality first");
     resetSelect(provinceOfBirthEl, "Select Region Of Birth first");
     tinEl.disabled = false; sssEl.disabled = false; philHealthEl.disabled = false; pagIbigEl.disabled = false;
+
+    profilePhotoDataUrl = ""; existingProfilePhotoUrl = "";
+    hideUploadPreview(profilePhotoPreview, profilePhotoPlaceholder, profilePhotoRemoveBtn);
+    profilePhotoExistingHint.style.display = "none";
+
+    signatureDataUrl = ""; existingSignatureUrl = ""; hasDrawnSignature = false;
+    fillSignatureCanvasWhite();
+    hideUploadPreview(signaturePhotoPreview, signaturePhotoPlaceholder, signaturePhotoRemoveBtn);
+    signatureExistingHint.style.display = "none";
+    setSignatureMethod("draw");
+
     hideBanner();
   }
 
