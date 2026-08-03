@@ -151,6 +151,12 @@
   const bloodTypeEl = el("bloodType"), civilStatusEl = el("civilStatus"),
         emergencyRelationshipEl = el("emergencyRelationship");
 
+  // Branch Assigned -> Client Code (cascading, like the address
+  // dropdowns) + a read-only Client Name hint once Code is picked
+  const branchAssignedEl = el("branchAssigned"), clientCodeEl = el("clientCode"),
+        clientNameHintEl = el("clientNameHint");
+  let branchClientData = []; // [{branch, clientCode, clientName}, ...] from getInitialFormData()
+
   // TIN / SSS / PhilHealth / Pag-IBIG "I don't have" toggles
   const tinEl = el("tin"), noTinEl = el("noTin");
   const sssEl = el("sssNo"), noSssEl = el("noSss");
@@ -409,6 +415,58 @@
         }
       })
       .catch(err => { showBanner("Could not load provinces for Region Of Birth."); console.error(err); });
+  });
+
+  /* ============================================================
+   * Branch Assigned -> Client Code -> Client Name hint
+   * Small dataset (unlike the address cascade), so all of it is
+   * bundled into getInitialFormData() and filtered locally here —
+   * no extra Apps Script round trips needed per selection.
+   * ========================================================== */
+  function populateBranchOptions() {
+    const branches = [...new Set(branchClientData.map(r => r.branch))].sort();
+    fillSimpleSelect(branchAssignedEl, branches, "Select Branch");
+  }
+
+  function populateClientCodeOptions(branch, preferredCode) {
+    if (!branch) {
+      resetSelect(clientCodeEl, "Select Branch Assigned first");
+      clientNameHintEl.style.display = "none";
+      return;
+    }
+    const codes = branchClientData
+      .filter(r => r.branch === branch)
+      .map(r => r.clientCode)
+      .sort();
+    if (codes.length) {
+      clientCodeEl.disabled = false;
+      fillSimpleSelect(clientCodeEl, codes, "Select Client Code", preferredCode);
+      updateClientNameHint();
+    } else {
+      resetSelect(clientCodeEl, "No client codes found for this branch");
+      clientNameHintEl.style.display = "none";
+    }
+  }
+
+  function updateClientNameHint() {
+    const branch = branchAssignedEl.value;
+    const code = clientCodeEl.value;
+    const match = branchClientData.find(r => r.branch === branch && r.clientCode === code);
+    if (match && match.clientName) {
+      clientNameHintEl.textContent = `Client Name: ${match.clientName}`;
+      clientNameHintEl.style.display = "block";
+    } else {
+      clientNameHintEl.style.display = "none";
+    }
+  }
+
+  branchAssignedEl.addEventListener("change", () => {
+    populateClientCodeOptions(branchAssignedEl.value);
+    markInvalid("branchAssigned", false);
+  });
+  clientCodeEl.addEventListener("change", () => {
+    updateClientNameHint();
+    markInvalid("clientCode", false);
   });
 
   /* ============================================================
@@ -673,6 +731,9 @@
       // this form is aimed at Philippine employees.
       if ((sv.country || []).includes("Philippines")) countryOfBirthEl.value = "Philippines";
 
+      branchClientData = data.branchClientData || [];
+      populateBranchOptions();
+
       validationRules = data.validation || null;
 
     })
@@ -780,6 +841,14 @@
     el("middleName").value = data.middleName || "";
     el("position").value = data.position || "";
     el("dateHired").value = data.dateHired || "";
+
+    // Branch Assigned -> Client Code (already loaded once at
+    // startup, so this is just a local filter — no round trip).
+    if (data.branchAssigned) {
+      branchAssignedEl.value = data.branchAssigned;
+      populateClientCodeOptions(data.branchAssigned, data.clientCode);
+    }
+
     el("contactNumber").value = data.contactNumber || "";
 
     el("homeStreet").value = data.homeStreet || "";
@@ -891,7 +960,7 @@
       if (bad) valid = false;
     });
 
-    const requiredSimpleSelects = ["countryOfBirth", "bloodType", "civilStatus", "emergencyRelationship"];
+    const requiredSimpleSelects = ["countryOfBirth", "bloodType", "civilStatus", "emergencyRelationship", "branchAssigned", "clientCode"];
     requiredSimpleSelects.forEach(id => {
       const bad = !el(id).value;
       markInvalid(id, bad);
@@ -977,6 +1046,12 @@
       middleName: toTitleCase(el("middleName").value),
       position: el("position").value.trim(),
       dateHired: el("dateHired").value,
+      branchAssigned: branchAssignedEl.value,
+      clientCode: clientCodeEl.value,
+      // Just a convenience echo — Code.gs always re-resolves the
+      // authoritative Client Name from the Branch & Client sheet
+      // rather than trusting this value.
+      clientName: (branchClientData.find(r => r.branch === branchAssignedEl.value && r.clientCode === clientCodeEl.value) || {}).clientName || "",
       contactNumber: el("contactNumber").value.trim(),
 
       homeStreet: el("homeStreet").value.trim(),
@@ -1162,6 +1237,8 @@
     resetSelect(emergencyCityEl, "Select Province first");
     resetSelect(emergencyBarangayEl, "Select City/Municipality first");
     resetSelect(provinceOfBirthEl, "Select Region Of Birth first");
+    resetSelect(clientCodeEl, "Select Branch Assigned first");
+    clientNameHintEl.style.display = "none";
     tinEl.disabled = false; sssEl.disabled = false; philHealthEl.disabled = false; pagIbigEl.disabled = false;
 
     profilePhotoDataUrl = ""; existingProfilePhotoUrl = "";

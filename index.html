@@ -80,6 +80,62 @@
         <label class="gf-label">Middle Name</label>
         <input type="text" id="middleName" autocomplete="additional-name">
       </div>
+      <!-- ============================================================ -->
+      <p class="gf-section-title">Photo &amp; Signature</p>
+
+      <div class="gf-question">
+        <label class="gf-label">Profile / ID Photo<span class="req">*</span></label>
+        <div class="gf-upload-box" id="profilePhotoBox">
+          <img id="profilePhotoPreview" class="gf-upload-preview" style="display:none;">
+          <div class="gf-upload-placeholder" id="profilePhotoPlaceholder">
+            <span>Take a photo or choose one from your gallery</span>
+          </div>
+          <div class="gf-upload-actions">
+            <label class="gf-upload-btn" for="profilePhotoCameraInput">Take Photo</label>
+            <label class="gf-upload-btn gf-upload-btn-secondary" for="profilePhotoGalleryInput">Choose from Gallery</label>
+            <button type="button" class="gf-clear-btn gf-upload-remove" id="profilePhotoRemoveBtn" style="display:none;">Remove</button>
+          </div>
+          <input type="file" id="profilePhotoCameraInput" accept="image/*" capture="environment" class="gf-upload-input">
+          <input type="file" id="profilePhotoGalleryInput" accept="image/*" class="gf-upload-input">
+        </div>
+        <div class="gf-hint" id="profilePhotoExistingHint" style="display:none;">A photo is already on file — choose a new one only if you want to replace it.</div>
+        <div class="gf-error-text" data-error-for="profilePhoto">Please provide a Profile/ID photo</div>
+      </div>
+
+      <div class="gf-question">
+        <label class="gf-label">Signature<span class="req">*</span></label>
+
+        <div class="gf-tab-group">
+          <button type="button" class="gf-tab-btn active" id="signatureDrawTabBtn">Draw Signature</button>
+          <button type="button" class="gf-tab-btn" id="signatureUploadTabBtn">Upload Photo</button>
+        </div>
+
+        <div id="signatureDrawPanel">
+          <canvas id="signatureCanvas" class="gf-signature-canvas" width="600" height="200"></canvas>
+          <div class="gf-upload-actions">
+            <button type="button" class="gf-clear-btn" id="signatureClearBtn">Clear</button>
+          </div>
+        </div>
+
+        <div id="signatureUploadPanel" style="display:none;">
+          <div class="gf-upload-box" id="signatureUploadBox">
+            <img id="signaturePhotoPreview" class="gf-upload-preview" style="display:none;">
+            <div class="gf-upload-placeholder" id="signaturePhotoPlaceholder">
+              <span>Take a photo or choose one from your gallery</span>
+            </div>
+            <div class="gf-upload-actions">
+              <label class="gf-upload-btn" for="signaturePhotoCameraInput">Take Photo</label>
+              <label class="gf-upload-btn gf-upload-btn-secondary" for="signaturePhotoGalleryInput">Choose from Gallery</label>
+              <button type="button" class="gf-clear-btn gf-upload-remove" id="signaturePhotoRemoveBtn" style="display:none;">Remove</button>
+            </div>
+            <input type="file" id="signaturePhotoCameraInput" accept="image/*" capture="environment" class="gf-upload-input">
+            <input type="file" id="signaturePhotoGalleryInput" accept="image/*" class="gf-upload-input">
+          </div>
+        </div>
+
+        <div class="gf-hint" id="signatureExistingHint" style="display:none;">A signature is already on file — draw or upload a new one only if you want to replace it.</div>
+        <div class="gf-error-text" data-error-for="signature">Please provide a signature</div>
+      </div>
 
       <!-- ============================================================ -->
       <p class="gf-section-title">Employment Information</p>
@@ -95,6 +151,21 @@
           <label class="gf-label">Date Hired<span class="req">*</span></label>
           <input type="date" id="dateHired">
           <div class="gf-error-text" data-error-for="dateHired">This is required</div>
+        </div>
+      </div>
+
+      <div class="gf-row">
+        <div class="gf-question">
+          <label class="gf-label">Branch Assigned<span class="req">*</span></label>
+          <select id="branchAssigned"><option value="">Loading&hellip;</option></select>
+          <div class="gf-error-text" data-error-for="branchAssigned">Please select a branch</div>
+        </div>
+
+        <div class="gf-question">
+          <label class="gf-label">Client Code<span class="req">*</span></label>
+          <select id="clientCode" disabled><option value="">Select Branch Assigned first</option></select>
+          <div class="gf-hint" id="clientNameHint" style="display:none;"></div>
+          <div class="gf-error-text" data-error-for="clientCode">Please select a client code</div>
         </div>
       </div>
 
@@ -240,63 +311,6 @@
           </div>
           <div class="gf-error-text" data-error-for="tin">Must be 9 digits</div>
         </div>
-      </div>
-
-      <!-- ============================================================ -->
-      <p class="gf-section-title">Photo &amp; Signature</p>
-
-      <div class="gf-question">
-        <label class="gf-label">Profile / ID Photo<span class="req">*</span></label>
-        <div class="gf-upload-box" id="profilePhotoBox">
-          <img id="profilePhotoPreview" class="gf-upload-preview" style="display:none;">
-          <div class="gf-upload-placeholder" id="profilePhotoPlaceholder">
-            <span>Take a photo or choose one from your gallery</span>
-          </div>
-          <div class="gf-upload-actions">
-            <label class="gf-upload-btn" for="profilePhotoCameraInput">Take Photo</label>
-            <label class="gf-upload-btn gf-upload-btn-secondary" for="profilePhotoGalleryInput">Choose from Gallery</label>
-            <button type="button" class="gf-clear-btn gf-upload-remove" id="profilePhotoRemoveBtn" style="display:none;">Remove</button>
-          </div>
-          <input type="file" id="profilePhotoCameraInput" accept="image/*" capture="environment" class="gf-upload-input">
-          <input type="file" id="profilePhotoGalleryInput" accept="image/*" class="gf-upload-input">
-        </div>
-        <div class="gf-hint" id="profilePhotoExistingHint" style="display:none;">A photo is already on file — choose a new one only if you want to replace it.</div>
-        <div class="gf-error-text" data-error-for="profilePhoto">Please provide a Profile/ID photo</div>
-      </div>
-
-      <div class="gf-question">
-        <label class="gf-label">Signature<span class="req">*</span></label>
-
-        <div class="gf-tab-group">
-          <button type="button" class="gf-tab-btn active" id="signatureDrawTabBtn">Draw Signature</button>
-          <button type="button" class="gf-tab-btn" id="signatureUploadTabBtn">Upload Photo</button>
-        </div>
-
-        <div id="signatureDrawPanel">
-          <canvas id="signatureCanvas" class="gf-signature-canvas" width="600" height="200"></canvas>
-          <div class="gf-upload-actions">
-            <button type="button" class="gf-clear-btn" id="signatureClearBtn">Clear</button>
-          </div>
-        </div>
-
-        <div id="signatureUploadPanel" style="display:none;">
-          <div class="gf-upload-box" id="signatureUploadBox">
-            <img id="signaturePhotoPreview" class="gf-upload-preview" style="display:none;">
-            <div class="gf-upload-placeholder" id="signaturePhotoPlaceholder">
-              <span>Take a photo or choose one from your gallery</span>
-            </div>
-            <div class="gf-upload-actions">
-              <label class="gf-upload-btn" for="signaturePhotoCameraInput">Take Photo</label>
-              <label class="gf-upload-btn gf-upload-btn-secondary" for="signaturePhotoGalleryInput">Choose from Gallery</label>
-              <button type="button" class="gf-clear-btn gf-upload-remove" id="signaturePhotoRemoveBtn" style="display:none;">Remove</button>
-            </div>
-            <input type="file" id="signaturePhotoCameraInput" accept="image/*" capture="environment" class="gf-upload-input">
-            <input type="file" id="signaturePhotoGalleryInput" accept="image/*" class="gf-upload-input">
-          </div>
-        </div>
-
-        <div class="gf-hint" id="signatureExistingHint" style="display:none;">A signature is already on file — draw or upload a new one only if you want to replace it.</div>
-        <div class="gf-error-text" data-error-for="signature">Please provide a signature</div>
       </div>
 
       <!-- ============================================================ -->
