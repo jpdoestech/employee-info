@@ -319,13 +319,13 @@
 
       <div class="gf-row">
         <div class="gf-question">
-          <label class="gf-label">Contact Person<span class="req">*</span></label>
+          <label class="gf-label">Name of Contact Person<span class="req">*</span></label>
           <input type="text" id="emergencyContactPerson">
           <div class="gf-error-text" data-error-for="emergencyContactPerson">This is required</div>
         </div>
 
         <div class="gf-question">
-          <label class="gf-label">Relationship<span class="req">*</span></label>
+          <label class="gf-label">Relationship of Contact Person<span class="req">*</span></label>
           <select id="emergencyRelationship"><option value="">Loading&hellip;</option></select>
           <div class="gf-error-text" data-error-for="emergencyRelationship">Please select a relationship</div>
         </div>
@@ -349,24 +349,28 @@
       <div class="gf-question">
         <label class="gf-label">Region<span class="req">*</span></label>
         <select id="emergencyRegion"><option value="">Loading regions&hellip;</option></select>
+        <div class="gf-hint">Region - address of your emergency contact person.</div>
         <div class="gf-error-text" data-error-for="emergencyRegion">Please select a region</div>
       </div>
 
       <div class="gf-question">
         <label class="gf-label">Province<span class="req">*</span></label>
         <select id="emergencyProvince" disabled><option value="">Select Region first</option></select>
+        <div class="gf-hint">Province - address of your emergency contact person.</div>
         <div class="gf-error-text" data-error-for="emergencyProvince">Please select a province</div>
       </div>
 
       <div class="gf-question">
         <label class="gf-label">City / Municipality<span class="req">*</span></label>
         <select id="emergencyCity" disabled><option value="">Select Province first</option></select>
+        <div class="gf-hint">Municipality - address of your emergency contact person.</div>
         <div class="gf-error-text" data-error-for="emergencyCity">Please select a city/municipality</div>
       </div>
 
       <div class="gf-question">
         <label class="gf-label">Barangay<span class="req">*</span></label>
         <select id="emergencyBarangay" disabled><option value="">Select City/Municipality first</option></select>
+        <div class="gf-hint">Barangay - address of your emergency contact person.</div>
         <div class="gf-error-text" data-error-for="emergencyBarangay">Please select a barangay</div>
       </div>
 
