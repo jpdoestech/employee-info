@@ -189,27 +189,48 @@
         <div class="gf-error-text" data-error-for="homeStreet">This is required</div>
       </div>
 
+      <div class="gf-quick-search-box">
+        <label class="gf-label">Quick Address Search (optional)</label>
+        <div class="gf-quick-search-hint">Type part of a barangay name (e.g. "Poblacion") to auto-fill Region, Province, City, and Barangay below.</div>
+        <div class="gf-combobox" id="homeQuickSearchCombobox">
+          <input type="text" id="homeQuickSearch" class="gf-combobox-input" autocomplete="off" placeholder="Start typing a barangay name&hellip;">
+          <div class="gf-combobox-list" id="homeQuickSearchList"></div>
+        </div>
+      </div>
+
       <div class="gf-question">
         <label class="gf-label">Region<span class="req">*</span></label>
-        <select id="homeRegion"><option value="">Loading regions&hellip;</option></select>
+        <div class="gf-combobox" id="homeRegionCombobox">
+          <input type="text" id="homeRegion" class="gf-combobox-input" autocomplete="off" placeholder="Loading regions&hellip;">
+          <div class="gf-combobox-list" id="homeRegionList"></div>
+        </div>
         <div class="gf-error-text" data-error-for="homeRegion">Please select a region</div>
       </div>
 
       <div class="gf-question">
         <label class="gf-label">Province<span class="req">*</span></label>
-        <select id="homeProvince" disabled><option value="">Select Region first</option></select>
+        <div class="gf-combobox" id="homeProvinceCombobox">
+          <input type="text" id="homeProvince" class="gf-combobox-input" autocomplete="off" placeholder="Select Region first" disabled>
+          <div class="gf-combobox-list" id="homeProvinceList"></div>
+        </div>
         <div class="gf-error-text" data-error-for="homeProvince">Please select a province</div>
       </div>
 
       <div class="gf-question">
         <label class="gf-label">City / Municipality<span class="req">*</span></label>
-        <select id="homeCity" disabled><option value="">Select Province first</option></select>
+        <div class="gf-combobox" id="homeCityCombobox">
+          <input type="text" id="homeCity" class="gf-combobox-input" autocomplete="off" placeholder="Select Province first" disabled>
+          <div class="gf-combobox-list" id="homeCityList"></div>
+        </div>
         <div class="gf-error-text" data-error-for="homeCity">Please select a city/municipality</div>
       </div>
 
       <div class="gf-question">
         <label class="gf-label">Barangay<span class="req">*</span></label>
-        <select id="homeBarangay" disabled><option value="">Select City/Municipality first</option></select>
+        <div class="gf-combobox" id="homeBarangayCombobox">
+          <input type="text" id="homeBarangay" class="gf-combobox-input" autocomplete="off" placeholder="Select City/Municipality first" disabled>
+          <div class="gf-combobox-list" id="homeBarangayList"></div>
+        </div>
         <div class="gf-error-text" data-error-for="homeBarangay">Please select a barangay</div>
       </div>
 
@@ -232,14 +253,20 @@
       <div class="gf-row">
         <div class="gf-question">
           <label class="gf-label">Region Of Birth<span class="req">*</span></label>
-          <select id="regionOfBirth"><option value="">Loading regions&hellip;</option></select>
+          <div class="gf-combobox" id="regionOfBirthCombobox">
+            <input type="text" id="regionOfBirth" class="gf-combobox-input" autocomplete="off" placeholder="Loading regions&hellip;">
+            <div class="gf-combobox-list" id="regionOfBirthList"></div>
+          </div>
           <div class="gf-hint">Used to load the correct provinces below</div>
           <div class="gf-error-text" data-error-for="regionOfBirth">Please select a region</div>
         </div>
 
         <div class="gf-question">
           <label class="gf-label">Province Of Birth<span class="req">*</span></label>
-          <select id="provinceOfBirth" disabled><option value="">Select Region Of Birth first</option></select>
+          <div class="gf-combobox" id="provinceOfBirthCombobox">
+            <input type="text" id="provinceOfBirth" class="gf-combobox-input" autocomplete="off" placeholder="Select Region Of Birth first" disabled>
+            <div class="gf-combobox-list" id="provinceOfBirthList"></div>
+          </div>
           <div class="gf-error-text" data-error-for="provinceOfBirth">Please select a province</div>
         </div>
       </div>
@@ -346,30 +373,51 @@
         <div class="gf-error-text" data-error-for="emergencyStreet">This is required</div>
       </div>
 
+      <div class="gf-quick-search-box">
+        <label class="gf-label">Quick Address Search (optional)</label>
+        <div class="gf-quick-search-hint">Type part of a barangay name (e.g. "Poblacion") to auto-fill Region, Province, City, and Barangay below.</div>
+        <div class="gf-combobox" id="emergencyQuickSearchCombobox">
+          <input type="text" id="emergencyQuickSearch" class="gf-combobox-input" autocomplete="off" placeholder="Start typing a barangay name&hellip;">
+          <div class="gf-combobox-list" id="emergencyQuickSearchList"></div>
+        </div>
+      </div>
+
       <div class="gf-question">
         <label class="gf-label">Region<span class="req">*</span></label>
-        <select id="emergencyRegion"><option value="">Loading regions&hellip;</option></select>
+        <div class="gf-combobox" id="emergencyRegionCombobox">
+          <input type="text" id="emergencyRegion" class="gf-combobox-input" autocomplete="off" placeholder="Loading regions&hellip;">
+          <div class="gf-combobox-list" id="emergencyRegionList"></div>
+        </div>
         <div class="gf-hint">Region - address of your emergency contact person.</div>
         <div class="gf-error-text" data-error-for="emergencyRegion">Please select a region</div>
       </div>
 
       <div class="gf-question">
         <label class="gf-label">Province<span class="req">*</span></label>
-        <select id="emergencyProvince" disabled><option value="">Select Region first</option></select>
+        <div class="gf-combobox" id="emergencyProvinceCombobox">
+          <input type="text" id="emergencyProvince" class="gf-combobox-input" autocomplete="off" placeholder="Select Region first" disabled>
+          <div class="gf-combobox-list" id="emergencyProvinceList"></div>
+        </div>
         <div class="gf-hint">Province - address of your emergency contact person.</div>
         <div class="gf-error-text" data-error-for="emergencyProvince">Please select a province</div>
       </div>
 
       <div class="gf-question">
         <label class="gf-label">City / Municipality<span class="req">*</span></label>
-        <select id="emergencyCity" disabled><option value="">Select Province first</option></select>
+        <div class="gf-combobox" id="emergencyCityCombobox">
+          <input type="text" id="emergencyCity" class="gf-combobox-input" autocomplete="off" placeholder="Select Province first" disabled>
+          <div class="gf-combobox-list" id="emergencyCityList"></div>
+        </div>
         <div class="gf-hint">Municipality - address of your emergency contact person.</div>
         <div class="gf-error-text" data-error-for="emergencyCity">Please select a city/municipality</div>
       </div>
 
       <div class="gf-question">
         <label class="gf-label">Barangay<span class="req">*</span></label>
-        <select id="emergencyBarangay" disabled><option value="">Select City/Municipality first</option></select>
+        <div class="gf-combobox" id="emergencyBarangayCombobox">
+          <input type="text" id="emergencyBarangay" class="gf-combobox-input" autocomplete="off" placeholder="Select City/Municipality first" disabled>
+          <div class="gf-combobox-list" id="emergencyBarangayList"></div>
+        </div>
         <div class="gf-hint">Barangay - address of your emergency contact person.</div>
         <div class="gf-error-text" data-error-for="emergencyBarangay">Please select a barangay</div>
       </div>
