@@ -135,18 +135,26 @@
         successReferenceCodeEl = el("successReferenceCode"), successLastNameEl = el("successLastName"),
         submitAnotherBtn = el("submitAnotherBtn"), copyReferenceBtn = el("copyReferenceBtn");
 
-  // Home address cascade
-  const homeRegionEl = el("homeRegion"), homeProvinceEl = el("homeProvince"),
-        homeCityEl = el("homeCity"), homeBarangayEl = el("homeBarangay");
+  const homeQuickSearchEl = el("homeQuickSearch"), homeQuickSearchListEl = el("homeQuickSearchList");
+  const emergencyQuickSearchEl = el("emergencyQuickSearch"), emergencyQuickSearchListEl = el("emergencyQuickSearchList");
+
+  // Home address cascade (comboboxes — type to filter, or click to browse)
+  const homeRegionEl = createCombobox(el("homeRegion"), el("homeRegionList"));
+  const homeProvinceEl = createCombobox(el("homeProvince"), el("homeProvinceList"));
+  const homeCityEl = createCombobox(el("homeCity"), el("homeCityList"));
+  const homeBarangayEl = createCombobox(el("homeBarangay"), el("homeBarangayList"));
 
   // Emergency contact address cascade
-  const emergencyRegionEl = el("emergencyRegion"), emergencyProvinceEl = el("emergencyProvince"),
-        emergencyCityEl = el("emergencyCity"), emergencyBarangayEl = el("emergencyBarangay");
+  const emergencyRegionEl = createCombobox(el("emergencyRegion"), el("emergencyRegionList"));
+  const emergencyProvinceEl = createCombobox(el("emergencyProvince"), el("emergencyProvinceList"));
+  const emergencyCityEl = createCombobox(el("emergencyCity"), el("emergencyCityList"));
+  const emergencyBarangayEl = createCombobox(el("emergencyBarangay"), el("emergencyBarangayList"));
 
   // Birth region/province (no city/barangay level, matches the
   // original intake form's Birth Information feature)
-  const regionOfBirthEl = el("regionOfBirth"), provinceOfBirthEl = el("provinceOfBirth"),
-        countryOfBirthEl = el("countryOfBirth");
+  const regionOfBirthEl = createCombobox(el("regionOfBirth"), el("regionOfBirthList"));
+  const provinceOfBirthEl = createCombobox(el("provinceOfBirth"), el("provinceOfBirthList"));
+  const countryOfBirthEl = el("countryOfBirth");
 
   const bloodTypeEl = el("bloodType"), civilStatusEl = el("civilStatus"),
         emergencyRelationshipEl = el("emergencyRelationship");
@@ -190,6 +198,11 @@
   let editReferenceLastName = "";
   let editReferenceCode = "";
   let validationRules = null; // populated from getInitialFormData()
+  let allRegionsCache = [];   // populated from getRegions(), reused by clearForm()
+
+  function populateRegionCombobox(comboboxEl) {
+    comboboxEl.fill(allRegionsCache, "Select Region");
+  }
 
   /* ============================================================
    * Generic helpers
@@ -247,6 +260,150 @@
     return String(str || "").toLowerCase().replace(/\b\p{L}/gu, ch => ch.toUpperCase());
   }
 
+  /* ============================================================
+   * Combobox (type-to-filter OR click-to-browse)
+   * Converts a plain text <input> + a suggestion list container
+   * into a searchable dropdown. API is deliberately close to the
+   * <select>-based helpers above (fill/reset/value/selectedName/
+   * addEventListener) so the address-cascade logic barely changes
+   * — see createAddressCascade() and the Region Of Birth cascade.
+   * ========================================================== */
+  function createCombobox(inputEl, listEl) {
+    let options = [];              // [{code, name}]
+    let selected = { code: "", name: "" };
+    let filtered = [];
+    let activeIndex = -1;
+    const changeListeners = [];
+    const MAX_VISIBLE = 60;         // enough to browse, not so many it's sluggish
+
+    function normalize(items) {
+      return items.map(item =>
+        typeof item === "string" ? { code: item, name: item } : { code: item.code, name: item.name }
+      );
+    }
+
+    function filterOptions(query) {
+      const q = query.trim().toLowerCase();
+      const pool = q ? options.filter(o => o.name.toLowerCase().includes(q)) : options;
+      return pool.slice(0, MAX_VISIBLE);
+    }
+
+    function renderList() {
+      listEl.innerHTML = "";
+      if (!filtered.length) {
+        const empty = document.createElement("div");
+        empty.className = "gf-combobox-empty";
+        empty.textContent = "No matches";
+        listEl.appendChild(empty);
+      } else {
+        filtered.forEach((item, idx) => {
+          const opt = document.createElement("div");
+          opt.className = "gf-combobox-option" + (idx === activeIndex ? " active" : "");
+          opt.textContent = item.name;
+          // mousedown (not click) fires before the input's blur handler,
+          // so the selection registers before the list gets closed/reverted
+          opt.addEventListener("mousedown", e => { e.preventDefault(); selectItem(item); });
+          listEl.appendChild(opt);
+        });
+      }
+      listEl.classList.add("show");
+    }
+
+    function closeList() {
+      listEl.classList.remove("show");
+      listEl.innerHTML = "";
+      activeIndex = -1;
+    }
+
+    function selectItem(item) {
+      selected = { code: item.code, name: item.name };
+      inputEl.value = item.name;
+      closeList();
+      changeListeners.forEach(fn => fn());
+    }
+
+    function scrollActiveIntoView() {
+      const activeEl = listEl.querySelector(".gf-combobox-option.active");
+      if (activeEl) activeEl.scrollIntoView({ block: "nearest" });
+    }
+
+    inputEl.addEventListener("input", () => {
+      // Typing invalidates whatever was previously selected until a
+      // fresh selection is made — mirrors a <select> having no value
+      // until an option is actually chosen.
+      if (selected.code && inputEl.value !== selected.name) selected = { code: "", name: "" };
+      filtered = filterOptions(inputEl.value);
+      activeIndex = -1;
+      renderList();
+    });
+
+    inputEl.addEventListener("focus", () => {
+      if (inputEl.disabled) return;
+      filtered = filterOptions(inputEl.value);
+      renderList();
+    });
+
+    inputEl.addEventListener("blur", () => {
+      // Delayed so a suggestion's mousedown can register its
+      // selection first (blur fires before click otherwise).
+      setTimeout(() => {
+        closeList();
+        // Enforce "must pick a real option" — revert stray typed
+        // text that doesn't match an actual selection.
+        if (inputEl.value !== selected.name) inputEl.value = selected.name;
+      }, 150);
+    });
+
+    inputEl.addEventListener("keydown", e => {
+      if (!listEl.classList.contains("show")) return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        activeIndex = Math.min(activeIndex + 1, filtered.length - 1);
+        renderList(); scrollActiveIntoView();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        activeIndex = Math.max(activeIndex - 1, 0);
+        renderList(); scrollActiveIntoView();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (activeIndex >= 0 && filtered[activeIndex]) selectItem(filtered[activeIndex]);
+      } else if (e.key === "Escape") {
+        closeList();
+      }
+    });
+
+    return {
+      fill(items, placeholder, preferredValue) {
+        options = normalize(items);
+        if (placeholder !== undefined) inputEl.placeholder = placeholder;
+        if (preferredValue) {
+          const match = options.find(o => o.code === preferredValue || o.name === preferredValue);
+          if (match) { selected = match; inputEl.value = match.name; }
+        }
+      },
+      reset(placeholder) {
+        options = [];
+        selected = { code: "", name: "" };
+        inputEl.value = "";
+        inputEl.disabled = true;
+        if (placeholder !== undefined) inputEl.placeholder = placeholder;
+        closeList();
+      },
+      enable() { inputEl.disabled = false; },
+      disable() { inputEl.disabled = true; },
+      get disabled() { return inputEl.disabled; },
+      get value() { return selected.code; },
+      get selectedName() { return selected.name; },
+      setValue(code) {
+        const match = options.find(o => o.code === code);
+        if (match) { selected = match; inputEl.value = match.name; }
+      },
+      addEventListener(eventName, fn) {
+        if (eventName === "change") changeListeners.push(fn);
+      }
+    };
+  }
+
   function markInvalid(idOrEl, invalid) {
     const targetEl = typeof idOrEl === "string" ? el(idOrEl) : idOrEl;
     if (targetEl) targetEl.classList && targetEl.classList.toggle("gf-invalid", invalid);
@@ -268,28 +425,28 @@
 
     function onRegionChange() {
       const regionCode = regionEl.value;
-      const regionName = selectedName(regionEl);
-      resetSelect(provinceEl, "Loading provinces\u2026");
-      resetSelect(cityEl, "Select Province first");
-      resetSelect(barangayEl, "Select City/Municipality first");
+      const regionName = regionEl.selectedName;
+      provinceEl.reset("Loading provinces\u2026");
+      cityEl.reset("Select Province first");
+      barangayEl.reset("Select City/Municipality first");
 
-      if (!regionCode) { resetSelect(provinceEl, "Select Region first"); return; }
+      if (!regionCode) { provinceEl.reset("Select Region first"); return; }
 
       callApi("getProvinces", regionCode)
         .then(provinces => {
           if (provinces && provinces.length) {
             state.provinceLevelExists = true;
-            provinceEl.disabled = false;
-            fillSelect(provinceEl, provinces, "Select Province");
+            provinceEl.enable();
+            provinceEl.fill(provinces, "Select Province");
           } else {
             // Province-less region (e.g. NCR): use the region itself
             // as the "province" value so the field still carries a
             // value instead of submitting empty and failing the
             // required-field check server-side.
             state.provinceLevelExists = false;
-            fillSelect(provinceEl, [{ code: regionCode, name: regionName }], "N/A for this region");
-            provinceEl.value = regionCode;
-            provinceEl.disabled = true;
+            provinceEl.fill([{ code: regionCode, name: regionName }], "N/A for this region");
+            provinceEl.setValue(regionCode);
+            provinceEl.disable();
             loadCitiesForRegion(regionCode);
           }
         })
@@ -297,35 +454,35 @@
     }
 
     function loadCitiesForRegion(regionCode) {
-      resetSelect(cityEl, "Loading cities\u2026");
+      cityEl.reset("Loading cities\u2026");
       callApi("getCitiesForRegion", regionCode)
         .then(cities => {
-          if (cities && cities.length) { cityEl.disabled = false; fillSelect(cityEl, cities, "Select City/Municipality"); }
-          else { resetSelect(cityEl, "No cities found \u2014 contact support"); }
+          if (cities && cities.length) { cityEl.enable(); cityEl.fill(cities, "Select City/Municipality"); }
+          else { cityEl.reset("No cities found \u2014 contact support"); }
         })
         .catch(err => { showBanner("Could not load cities."); console.error(err); });
     }
 
     function onProvinceChange() {
       const provinceCode = provinceEl.value;
-      resetSelect(cityEl, "Loading cities\u2026");
-      resetSelect(barangayEl, "Select City/Municipality first");
+      cityEl.reset("Loading cities\u2026");
+      barangayEl.reset("Select City/Municipality first");
 
-      if (!provinceCode) { resetSelect(cityEl, "Select Province first"); return; }
+      if (!provinceCode) { cityEl.reset("Select Province first"); return; }
 
       callApi("getCities", provinceCode)
-        .then(cities => { cityEl.disabled = false; fillSelect(cityEl, cities, "Select City/Municipality"); })
+        .then(cities => { cityEl.enable(); cityEl.fill(cities, "Select City/Municipality"); })
         .catch(err => { showBanner("Could not load cities."); console.error(err); });
     }
 
     function onCityChange() {
       const cityCode = cityEl.value;
-      resetSelect(barangayEl, "Loading barangays\u2026");
+      barangayEl.reset("Loading barangays\u2026");
 
-      if (!cityCode) { resetSelect(barangayEl, "Select City/Municipality first"); return; }
+      if (!cityCode) { barangayEl.reset("Select City/Municipality first"); return; }
 
       callApi("getBarangays", cityCode)
-        .then(barangays => { barangayEl.disabled = false; fillSelect(barangayEl, barangays, "Select Barangay"); })
+        .then(barangays => { barangayEl.enable(); barangayEl.fill(barangays, "Select Barangay"); })
         .catch(err => { showBanner("Could not load barangays."); console.error(err); });
     }
 
@@ -335,26 +492,29 @@
 
     /**
      * Restores a saved cascade (Region -> Province -> City ->
-     * Barangay) during "view/edit my response", awaiting each
-     * level before loading the next.
+     * Barangay) during "view/edit my response" AND when the
+     * barangay Quick Address Search auto-fills a whole address —
+     * both need to populate every level's full option list (not
+     * just the one selected value) and select the right one at
+     * each step, awaiting each level before loading the next.
      */
     async function restore(regionCode, provinceCode, cityCode, barangayCode) {
       if (!regionCode) return;
-      regionEl.value = regionCode;
-      const regionName = selectedName(regionEl);
+      regionEl.setValue(regionCode);
+      const regionName = regionEl.selectedName;
 
       try {
         const provinces = await callApi("getProvinces", regionCode);
         if (provinces && provinces.length) {
           state.provinceLevelExists = true;
-          provinceEl.disabled = false;
-          fillSelect(provinceEl, provinces, "Select Province");
-          if (provinceCode) provinceEl.value = provinceCode;
+          provinceEl.enable();
+          provinceEl.fill(provinces, "Select Province");
+          if (provinceCode) provinceEl.setValue(provinceCode);
         } else {
           state.provinceLevelExists = false;
-          fillSelect(provinceEl, [{ code: regionCode, name: regionName }], "N/A for this region");
-          provinceEl.value = regionCode;
-          provinceEl.disabled = true;
+          provinceEl.fill([{ code: regionCode, name: regionName }], "N/A for this region");
+          provinceEl.setValue(regionCode);
+          provinceEl.disable();
         }
 
         const cities = state.provinceLevelExists
@@ -362,17 +522,17 @@
           : await callApi("getCitiesForRegion", regionCode);
 
         if (cities && cities.length) {
-          cityEl.disabled = false;
-          fillSelect(cityEl, cities, "Select City/Municipality");
-          if (cityCode) cityEl.value = cityCode;
+          cityEl.enable();
+          cityEl.fill(cities, "Select City/Municipality");
+          if (cityCode) cityEl.setValue(cityCode);
         }
 
         if (cityCode) {
           const barangays = await callApi("getBarangays", cityCode);
           if (barangays && barangays.length) {
-            barangayEl.disabled = false;
-            fillSelect(barangayEl, barangays, "Select Barangay");
-            if (barangayCode) barangayEl.value = barangayCode;
+            barangayEl.enable();
+            barangayEl.fill(barangays, "Select Barangay");
+            if (barangayCode) barangayEl.setValue(barangayCode);
           }
         }
       } catch (e) {
@@ -387,6 +547,101 @@
   const emergencyCascade = createAddressCascade(emergencyRegionEl, emergencyProvinceEl, emergencyCityEl, emergencyBarangayEl);
 
   /* ============================================================
+   * Quick Address Search — type part of a barangay name, pick a
+   * suggestion, and the whole Region/Province/City/Barangay
+   * cascade auto-fills for that address block.
+   *
+   * The full nationwide index (~42,000 barangays, ~8MB) is lazy
+   * loaded on first use — not on page load — so people who never
+   * touch this box pay zero extra cost for it.
+   * ========================================================== */
+  let barangaySearchIndexPromise = null;
+  function loadBarangaySearchIndex() {
+    if (!barangaySearchIndexPromise) {
+      barangaySearchIndexPromise = fetchJson(`${DATA_BASE}/barangay-search-index.json`);
+    }
+    return barangaySearchIndexPromise;
+  }
+
+  function createBarangaySearch(inputEl, listEl, cascade) {
+    let debounceTimer = null;
+
+    function renderLoading() {
+      listEl.innerHTML = "";
+      const loading = document.createElement("div");
+      loading.className = "gf-quick-search-loading";
+      loading.textContent = "Loading barangay index\u2026 (first search only)";
+      listEl.appendChild(loading);
+      listEl.classList.add("show");
+    }
+
+    function renderResults(matches) {
+      listEl.innerHTML = "";
+      if (!matches.length) {
+        const empty = document.createElement("div");
+        empty.className = "gf-combobox-empty";
+        empty.textContent = "No matching barangay found";
+        listEl.appendChild(empty);
+      } else {
+        matches.forEach(item => {
+          const opt = document.createElement("div");
+          opt.className = "gf-quick-search-option";
+          const path = [item.cityName, item.provinceName, item.regionName].filter(Boolean).join(", ");
+          opt.innerHTML = `<div class="gf-quick-search-name"></div><div class="gf-quick-search-path"></div>`;
+          opt.querySelector(".gf-quick-search-name").textContent = item.name;
+          opt.querySelector(".gf-quick-search-path").textContent = path;
+          opt.addEventListener("mousedown", async e => {
+            e.preventDefault();
+            listEl.classList.remove("show");
+            inputEl.value = `${item.name} \u2014 ${item.cityName}`;
+            inputEl.disabled = true;
+            try {
+              await cascade.restore(item.regionCode, item.provinceCode, item.cityCode, item.code);
+            } finally {
+              inputEl.disabled = false;
+            }
+          });
+          listEl.appendChild(opt);
+        });
+      }
+      listEl.classList.add("show");
+    }
+
+    function runSearch(query) {
+      const q = query.trim().toLowerCase();
+      if (!q) { listEl.classList.remove("show"); return; }
+      loadBarangaySearchIndex()
+        .then(index => {
+          const matches = index.filter(b => b.name.toLowerCase().includes(q)).slice(0, 25);
+          renderResults(matches);
+        })
+        .catch(err => {
+          listEl.innerHTML = "";
+          const errEl = document.createElement("div");
+          errEl.className = "gf-quick-search-loading";
+          errEl.textContent = "Could not load the barangay index. Please use the dropdowns below instead.";
+          listEl.appendChild(errEl);
+          console.error(err);
+        });
+    }
+
+    inputEl.addEventListener("input", () => {
+      clearTimeout(debounceTimer);
+      const query = inputEl.value;
+      if (!query.trim()) { listEl.classList.remove("show"); return; }
+      if (!barangaySearchIndexPromise) renderLoading();
+      debounceTimer = setTimeout(() => runSearch(query), 250);
+    });
+
+    inputEl.addEventListener("blur", () => {
+      setTimeout(() => listEl.classList.remove("show"), 150);
+    });
+  }
+
+  createBarangaySearch(homeQuickSearchEl, homeQuickSearchListEl, homeCascade);
+  createBarangaySearch(emergencyQuickSearchEl, emergencyQuickSearchListEl, emergencyCascade);
+
+  /* ============================================================
    * Region Of Birth -> Province Of Birth (no City/Barangay level,
    * matches the original form's Birth Information feature)
    * ========================================================== */
@@ -394,24 +649,24 @@
 
   regionOfBirthEl.addEventListener("change", () => {
     const regionCode = regionOfBirthEl.value;
-    const regionName = selectedName(regionOfBirthEl);
-    resetSelect(provinceOfBirthEl, "Loading provinces\u2026");
+    const regionName = regionOfBirthEl.selectedName;
+    provinceOfBirthEl.reset("Loading provinces\u2026");
 
-    if (!regionCode) { resetSelect(provinceOfBirthEl, "Select Region Of Birth first"); return; }
+    if (!regionCode) { provinceOfBirthEl.reset("Select Region Of Birth first"); return; }
 
     callApi("getProvinces", regionCode)
       .then(provinces => {
         if (provinces && provinces.length) {
           birthProvinceLevelExists = true;
-          provinceOfBirthEl.disabled = false;
-          fillSelect(provinceOfBirthEl, provinces, "Select Province");
+          provinceOfBirthEl.enable();
+          provinceOfBirthEl.fill(provinces, "Select Province");
         } else {
           // Province-less region (e.g. NCR): use the region itself as
           // the "province" value so the field still carries a value.
           birthProvinceLevelExists = false;
-          fillSelect(provinceOfBirthEl, [{ code: regionCode, name: regionName }], "N/A for this region");
-          provinceOfBirthEl.value = regionCode;
-          provinceOfBirthEl.disabled = true;
+          provinceOfBirthEl.fill([{ code: regionCode, name: regionName }], "N/A for this region");
+          provinceOfBirthEl.setValue(regionCode);
+          provinceOfBirthEl.disable();
         }
       })
       .catch(err => { showBanner("Could not load provinces for Region Of Birth."); console.error(err); });
@@ -718,9 +973,10 @@
   Promise.all([callApi("getInitialFormData"), callApi("getRegions")])
     .then(([data, regions]) => {
 
-      fillSelect(homeRegionEl, regions, "Select Region");
-      fillSelect(emergencyRegionEl, regions, "Select Region");
-      fillSelect(regionOfBirthEl, regions, "Select Region");
+      allRegionsCache = regions;
+      homeRegionEl.fill(regions, "Select Region");
+      emergencyRegionEl.fill(regions, "Select Region");
+      regionOfBirthEl.fill(regions, "Select Region");
 
       const sv = data.standardValues || {};
       fillSimpleSelect(bloodTypeEl, sv.bloodType || [], "Select Blood Type");
@@ -924,17 +1180,17 @@
       emergencyCascade.restore(data.emergencyRegionCode, data.emergencyProvinceCode, data.emergencyCityCode, data.emergencyBarangayCode),
       (async () => {
         if (!data.regionOfBirthCode) return;
-        regionOfBirthEl.value = data.regionOfBirthCode;
+        regionOfBirthEl.setValue(data.regionOfBirthCode);
         try {
           const provinces = await callApi("getProvinces", data.regionOfBirthCode);
           if (provinces && provinces.length) {
             birthProvinceLevelExists = true;
-            provinceOfBirthEl.disabled = false;
-            fillSelect(provinceOfBirthEl, provinces, "Select Province");
-            if (data.provinceOfBirthCode) provinceOfBirthEl.value = data.provinceOfBirthCode;
+            provinceOfBirthEl.enable();
+            provinceOfBirthEl.fill(provinces, "Select Province");
+            if (data.provinceOfBirthCode) provinceOfBirthEl.setValue(data.provinceOfBirthCode);
           } else {
             birthProvinceLevelExists = false;
-            resetSelect(provinceOfBirthEl, "N/A for this region");
+            provinceOfBirthEl.reset("N/A for this region");
           }
         } catch (e) { console.error(e); }
       })()
@@ -1056,20 +1312,20 @@
 
       homeStreet: el("homeStreet").value.trim(),
       homeRegionCode: homeRegionEl.value,
-      homeRegionName: selectedName(homeRegionEl),
+      homeRegionName: homeRegionEl.selectedName,
       homeProvinceCode: homeCascade.state.provinceLevelExists ? homeProvinceEl.value : homeRegionEl.value,
-      homeProvinceName: homeCascade.state.provinceLevelExists ? selectedName(homeProvinceEl) : selectedName(homeRegionEl),
+      homeProvinceName: homeCascade.state.provinceLevelExists ? homeProvinceEl.selectedName : homeRegionEl.selectedName,
       homeCityCode: homeCityEl.value,
-      homeCityName: selectedName(homeCityEl),
+      homeCityName: homeCityEl.selectedName,
       homeBarangayCode: homeBarangayEl.value,
-      homeBarangayName: selectedName(homeBarangayEl),
+      homeBarangayName: homeBarangayEl.selectedName,
 
       dateOfBirth: el("dateOfBirth").value,
       placeOfBirth: el("placeOfBirth").value.trim(),
       regionOfBirthCode: regionOfBirthEl.value,
-      regionOfBirthName: selectedName(regionOfBirthEl),
+      regionOfBirthName: regionOfBirthEl.selectedName,
       provinceOfBirthCode: birthProvinceLevelExists ? provinceOfBirthEl.value : regionOfBirthEl.value,
-      provinceOfBirthName: birthProvinceLevelExists ? selectedName(provinceOfBirthEl) : selectedName(regionOfBirthEl),
+      provinceOfBirthName: birthProvinceLevelExists ? provinceOfBirthEl.selectedName : regionOfBirthEl.selectedName,
       countryOfBirth: countryOfBirthEl.value,
 
       bloodType: bloodTypeEl.value,
@@ -1090,13 +1346,13 @@
 
       emergencyStreet: el("emergencyStreet").value.trim(),
       emergencyRegionCode: emergencyRegionEl.value,
-      emergencyRegionName: selectedName(emergencyRegionEl),
+      emergencyRegionName: emergencyRegionEl.selectedName,
       emergencyProvinceCode: emergencyCascade.state.provinceLevelExists ? emergencyProvinceEl.value : emergencyRegionEl.value,
-      emergencyProvinceName: emergencyCascade.state.provinceLevelExists ? selectedName(emergencyProvinceEl) : selectedName(emergencyRegionEl),
+      emergencyProvinceName: emergencyCascade.state.provinceLevelExists ? emergencyProvinceEl.selectedName : emergencyRegionEl.selectedName,
       emergencyCityCode: emergencyCityEl.value,
-      emergencyCityName: selectedName(emergencyCityEl),
+      emergencyCityName: emergencyCityEl.selectedName,
       emergencyBarangayCode: emergencyBarangayEl.value,
-      emergencyBarangayName: selectedName(emergencyBarangayEl),
+      emergencyBarangayName: emergencyBarangayEl.selectedName,
 
       referenceLastName: isEditMode ? editReferenceLastName : "",
       referenceCode: isEditMode ? editReferenceCode : ""
@@ -1230,13 +1486,27 @@
     formEl.reset();
     document.querySelectorAll(".gf-invalid").forEach(f => f.classList.remove("gf-invalid"));
     document.querySelectorAll(".gf-error-text.show").forEach(f => f.classList.remove("show"));
-    resetSelect(homeProvinceEl, "Select Region first");
-    resetSelect(homeCityEl, "Select Province first");
-    resetSelect(homeBarangayEl, "Select City/Municipality first");
-    resetSelect(emergencyProvinceEl, "Select Region first");
-    resetSelect(emergencyCityEl, "Select Province first");
-    resetSelect(emergencyBarangayEl, "Select City/Municipality first");
-    resetSelect(provinceOfBirthEl, "Select Region Of Birth first");
+    // formEl.reset() only clears the comboboxes' visible input text —
+    // their internal selected-value state needs resetting explicitly,
+    // unlike a native <select> which resets its value automatically.
+    homeRegionEl.reset("Select Region");
+    homeProvinceEl.reset("Select Region first");
+    homeCityEl.reset("Select Province first");
+    homeBarangayEl.reset("Select City/Municipality first");
+    emergencyRegionEl.reset("Select Region");
+    emergencyProvinceEl.reset("Select Region first");
+    emergencyCityEl.reset("Select Province first");
+    emergencyBarangayEl.reset("Select City/Municipality first");
+    regionOfBirthEl.reset("Select Region");
+    provinceOfBirthEl.reset("Select Region Of Birth first");
+    // Region-level comboboxes need their full option list refilled
+    // immediately after reset (unlike Province/City/Barangay, which
+    // stay empty until their parent is picked again).
+    populateRegionCombobox(homeRegionEl);
+    populateRegionCombobox(emergencyRegionEl);
+    populateRegionCombobox(regionOfBirthEl);
+    homeQuickSearchEl.value = "";
+    emergencyQuickSearchEl.value = "";
     resetSelect(clientCodeEl, "Select Branch Assigned first");
     clientNameHintEl.style.display = "none";
     tinEl.disabled = false; sssEl.disabled = false; philHealthEl.disabled = false; pagIbigEl.disabled = false;

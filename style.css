@@ -499,3 +499,109 @@
   .gf-upload-actions { flex-direction: column; align-items: stretch; }
   .gf-tab-group { flex-direction: column; }
 }
+
+/* ============================================================
+ * Combobox (type-to-filter OR click-to-browse dropdown)
+ * Used for Region/Province/City/Barangay everywhere, replacing
+ * plain <select> so long barangay lists aren't a scroll-fest.
+ * ============================================================ */
+
+.gf-combobox {
+  position: relative;
+}
+
+.gf-combobox-input {
+  cursor: text;
+}
+
+.gf-combobox-input:disabled {
+  cursor: not-allowed;
+}
+
+.gf-combobox-list {
+  display: none;
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--gf-border);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  margin-top: 2px;
+}
+
+.gf-combobox-list.show { display: block; }
+
+.gf-combobox-option {
+  padding: 10px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.gf-combobox-option:last-child { border-bottom: none; }
+
+.gf-combobox-option:hover,
+.gf-combobox-option.active {
+  background: var(--gf-bg);
+}
+
+.gf-combobox-empty {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--gf-text-secondary);
+  font-style: italic;
+}
+
+/* Barangay quick-search box */
+.gf-quick-search-box {
+  background: #f8f6fc;
+  border: 1px solid var(--gf-border);
+  border-radius: var(--gf-radius);
+  padding: 16px;
+  margin-bottom: 8px;
+}
+
+.gf-quick-search-box .gf-label {
+  margin-bottom: 4px;
+}
+
+.gf-quick-search-hint {
+  font-size: 12px;
+  color: var(--gf-text-secondary);
+  margin: 4px 0 10px;
+}
+
+.gf-quick-search-option {
+  padding: 10px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.gf-quick-search-option:last-child { border-bottom: none; }
+
+.gf-quick-search-option:hover,
+.gf-quick-search-option.active {
+  background: var(--gf-bg);
+}
+
+.gf-quick-search-option .gf-quick-search-name {
+  font-weight: 500;
+}
+
+.gf-quick-search-option .gf-quick-search-path {
+  font-size: 12px;
+  color: var(--gf-text-secondary);
+  margin-top: 2px;
+}
+
+.gf-quick-search-loading {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--gf-text-secondary);
+}
